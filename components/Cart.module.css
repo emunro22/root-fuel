@@ -1,0 +1,83 @@
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+.drawer {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: min(400px, 100vw);
+  background: #0f150f;
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s cubic-bezier(0.32,0.72,0,1);
+  border-left: 1px solid rgba(255,255,255,0.07);
+}
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 400; color: #f0ede8;
+}
+.close {
+  background: #1a221a; border: 1px solid rgba(255,255,255,0.08);
+  color: #7a9077; width: 34px; height: 34px; border-radius: 50%;
+  cursor: pointer; font-size: 13px; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s;
+}
+.close:hover { border-color: rgba(74,158,64,0.3); color: #f0ede8; }
+.empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; color: #4a5e48;
+}
+.emptyIcon { font-size: 40px; margin-bottom: 8px; opacity: 0.4; }
+.items {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.item {
+  background: #1a221a; border-radius: 10px; padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,0.07); transition: border-color 0.2s;
+}
+.item:hover { border-color: rgba(74,158,64,0.25); }
+.itemInfo {
+  display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;
+}
+.itemName { font-weight: 500; font-size: 14px; color: #f0ede8; }
+.itemPrice { font-weight: 700; color: #4a9e40; font-size: 14px; }
+.qty { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: #4a9e40; }
+.qBtn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1); background: #202a20;
+  color: #7a9077; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.qBtn:hover { border-color: #4a9e40; color: #4a9e40; }
+.footer {
+  padding: 18px 20px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  background: #0f150f;
+}
+.totalRow {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+}
+.totalLabel { font-size: 11px; color: #4a5e48; letter-spacing: 1.5px; text-transform: uppercase; }
+.totalAmt {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600; color: #f0ede8;
+}
+.checkoutBtn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg, #2d6a27, #4a9e40);
+  color: white; border: none; padding: 15px; border-radius: 14px;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(74,158,64,0.3);
+}
+.checkoutBtn:hover { box-shadow: 0 8px 32px rgba(74,158,64,0.45); transform: translateY(-1px); }

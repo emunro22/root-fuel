@@ -1,0 +1,24 @@
+{
+  "name": "rootfuel-ordering",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.1.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "stripe": "^14.0.0",
+    "@stripe/stripe-js": "^2.0.0",
+    "googleapis": "^137.1.0",
+    "nodemailer": "^6.9.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0"
+  }
+}
