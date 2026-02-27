@@ -1,7 +1,7 @@
 .card {
-  background: #1a221a;
+  background: #ffffff !important;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: all 0.25s;
@@ -10,115 +10,72 @@
   position: relative;
 }
 .card:hover {
-  border-color: rgba(74,158,64,0.35);
+  border-color: var(--border-green);
   transform: translateY(-3px);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.08);
 }
-.cardHasItem { border-color: rgba(74,158,64,0.45) !important; }
+.cardHasItem { border-color: var(--border-green) !important; box-shadow: 0 4px 20px rgba(45,107,39,0.08); }
 
-/* Food image */
 .imageWrap {
-  width: 100%;
-  height: 160px;
-  overflow: hidden;
-  background: #141a14;
-  flex-shrink: 0;
+  width: 100%; height: 160px;
+  overflow: hidden; background: var(--bg-subtle) !important; flex-shrink: 0;
 }
 .image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  transition: transform 0.4s ease;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block; transition: transform 0.4s ease;
 }
 .card:hover .image { transform: scale(1.04); }
 .imagePlaceholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  opacity: 0.3;
-  background: linear-gradient(135deg, #141a14, #1a221a);
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; opacity: 0.25;
+  background: linear-gradient(135deg, var(--bg-subtle), var(--bg-muted)) !important;
 }
 
-/* Card body */
 .cardBody {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  padding: 20px; display: flex; flex-direction: column; flex: 1;
+  background: #ffffff !important;
 }
 .category {
-  font-size: 9px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #4a9e40;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--green-light); font-weight: 600; margin-bottom: 8px;
 }
 .name {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 21px;
-  font-weight: 400;
-  color: #f0ede8;
-  margin-bottom: 6px;
-  line-height: 1.2;
+  font-size: 21px; font-weight: 400; color: var(--text);
+  margin-bottom: 6px; line-height: 1.2;
 }
 .desc {
-  font-size: 13px;
-  color: #4a5e48;
-  line-height: 1.6;
-  flex: 1;
-  margin-bottom: 18px;
+  font-size: 13px; color: var(--text-muted); line-height: 1.6;
+  flex: 1; margin-bottom: 18px;
 }
 .footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
 }
 .price {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 24px;
-  font-weight: 600;
-  color: #f0ede8;
+  font-size: 24px; font-weight: 600; color: var(--text);
 }
 .controls { display: flex; align-items: center; gap: 8px; }
 .addBtn {
-  background: rgba(74,158,64,0.1);
-  color: #4a9e40;
-  border: 1px solid rgba(74,158,64,0.3);
-  padding: 8px 20px;
-  border-radius: 100px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: var(--green-pale) !important;
+  color: var(--green);
+  border: 1px solid var(--border-green);
+  padding: 8px 20px; border-radius: 100px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
 }
-.addBtn:hover { background: #4a9e40; color: white; border-color: #4a9e40; }
+.addBtn:hover { background: var(--green) !important; color: white; border-color: var(--green); }
 .qtyBtn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: #202a20;
-  color: #7a9077;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  line-height: 1;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg-subtle) !important;
+  color: var(--text-muted); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; line-height: 1;
 }
-.qtyBtn:hover { border-color: #4a9e40; color: #4a9e40; }
+.qtyBtn:hover { border-color: var(--green); color: var(--green); }
 .qty {
-  min-width: 22px;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: #4a9e40;
+  min-width: 22px; text-align: center;
+  font-size: 15px; font-weight: 700; color: var(--green);
 }

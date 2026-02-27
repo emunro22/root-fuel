@@ -2,24 +2,22 @@ import { useState } from 'react';
 import styles from './OrderForm.module.css';
 
 const ORDER_TYPES = [
-  { id: 'dine-in', label: 'Dine In', icon: '🍽️' },
-  { id: 'pickup', label: 'Collection', icon: '🛍️' },
-  { id: 'delivery', label: 'Delivery', icon: '🚴' },
+  { id: 'pickup',   label: 'Collection', icon: '🛍️' },
+  { id: 'delivery', label: 'Delivery',   icon: '🚴' },
 ];
 
 export default function OrderForm({ cart, onClose }) {
-  const [orderType, setOrderType] = useState('dine-in');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', table: '', address: '', notes: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [orderType, setOrderType] = useState('pickup');
+  const [form,      setForm]      = useState({ name: '', email: '', phone: '', address: '', notes: '' });
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState('');
 
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const validate = () => {
-    if (!form.name.trim()) return 'Please enter your name';
+    if (!form.name.trim())                               return 'Please enter your name';
     if (!form.email.trim() || !form.email.includes('@')) return 'Please enter a valid email';
-    if (orderType === 'dine-in' && !form.table.trim()) return 'Please enter your table number';
     if (orderType === 'delivery' && !form.address.trim()) return 'Please enter your delivery address';
     return null;
   };
@@ -37,7 +35,10 @@ export default function OrderForm({ cart, onClose }) {
         body: JSON.stringify({
           items: cart,
           customer: { name: form.name, email: form.email, phone: form.phone },
-          orderType, table: form.table, address: form.address, notes: form.notes,
+          orderType,
+          table: '',
+          address: form.address,
+          notes: form.notes,
         }),
       });
       const data = await res.json();
@@ -63,7 +64,7 @@ export default function OrderForm({ cart, onClose }) {
             <button className={styles.close} onClick={onClose}>✕</button>
           </div>
           <div className={styles.body}>
-            {/* Order type */}
+
             <div className={styles.section}>
               <span className={styles.sectionLabel}>How would you like your order?</span>
               <div className={styles.typeGrid}>
@@ -97,12 +98,6 @@ export default function OrderForm({ cart, onClose }) {
                     <label className={styles.label}>Phone</label>
                     <input className={styles.input} type="tel" placeholder="Optional" value={form.phone} onChange={e => set('phone', e.target.value)} />
                   </div>
-                  {orderType === 'dine-in' && (
-                    <div className={styles.field}>
-                      <label className={styles.label}>Table Number *</label>
-                      <input className={styles.input} type="text" placeholder="e.g. 5" value={form.table} onChange={e => set('table', e.target.value)} />
-                    </div>
-                  )}
                   {orderType === 'delivery' && (
                     <div className={`${styles.field} ${styles.fullWidth}`}>
                       <label className={styles.label}>Delivery Address *</label>

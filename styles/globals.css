@@ -2,23 +2,51 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg:           #f5f1ea;
+  --bg-card:      #ffffff;
+  --bg-subtle:    #ede9e0;
+  --bg-muted:     #e4dfd4;
+  --green:        #2d6b27;
+  --green-mid:    #3d8a35;
+  --green-light:  #4a9e40;
+  --green-pale:   #eaf4e8;
+  --text:         #1a2418;
+  --text-mid:     #3d5239;
+  --text-muted:   #7a8f77;
+  --border:       rgba(0,0,0,0.08);
+  --border-green: rgba(45,107,39,0.25);
+  --shadow:       rgba(0,0,0,0.07);
+}
+
 html {
-  background: #0a0f0a !important;
-  color-scheme: dark;
+  background: var(--bg) !important;
+  color-scheme: light;
 }
 
 body {
-  background: #0a0f0a !important;
-  color: #f0ede8;
+  background: var(--bg) !important;
+  color: var(--text);
   font-family: 'DM Sans', sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-#__next {
-  background: #0a0f0a;
+/* Kill dark background on Next.js root and any wrapper divs */
+#__next,
+#__next > div {
+  background: var(--bg) !important;
   min-height: 100vh;
+}
+
+/* ── CRITICAL: Never inherit dark backgrounds ── */
+div, section, header, footer, nav, aside {
+  background-color: transparent;
+}
+/* main needs explicit cream so it never goes dark */
+main {
+  background-color: #f5f1ea !important;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -26,33 +54,28 @@ button { font-family: inherit; }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
+  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  50%       { transform: scale(1.1); }
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 @keyframes slideIn {
   from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-/* Ensure full dark background everywhere */
-main, section, div {
-  background-color: inherit;
+  to   { transform: translateX(0); }
 }

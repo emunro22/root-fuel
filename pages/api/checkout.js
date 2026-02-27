@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     // Pre-append order to Google Sheets before Stripe redirect
     await appendOrder({
       orderId,
-      status: 'pending_payment',
+      status: 'paid ✅',
       type: orderType,
       name: customer.name,
       email: customer.email,

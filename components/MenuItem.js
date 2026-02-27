@@ -1,25 +1,29 @@
-import { useState } from 'react';
 import styles from './MenuItem.module.css';
 
 export default function MenuItem({ item, quantity, onAdd, onRemove, delay }) {
-  const [imgError, setImgError] = useState(false);
-
   return (
     <div
       className={`${styles.card} ${quantity > 0 ? styles.cardHasItem : ''}`}
       style={{ animationDelay: `${delay}ms` }}
     >
+      {/* Image or placeholder */}
       <div className={styles.imageWrap}>
-        {item.image && !imgError ? (
+        {item.image ? (
           <img
             src={item.image}
             alt={item.name}
             className={styles.image}
-            onError={() => setImgError(true)}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
           />
-        ) : (
-          <div className={styles.imagePlaceholder}>🌿</div>
-        )}
+        ) : null}
+        <div
+          className={styles.imagePlaceholder}
+          style={{ display: item.image ? 'none' : 'flex' }}
+        >
+          🌿
+        </div>
       </div>
 
       <div className={styles.cardBody}>
