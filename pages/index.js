@@ -347,6 +347,65 @@ export default function Home() {
         {showCart && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
         {showForm && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
 
+        {/* ── Footer ── paste this just before the closing </div> of the outer wrapper, after the showForm line */}
+
+        <footer className={styles.footer}>
+          <div className={styles.footerInner}>
+
+            {/* Brand column */}
+            <div className={styles.footerBrand}>
+              <img src="/logo.png" alt="Root + Fuel" className={styles.footerLogo} />
+              <p className={styles.footerTagline}>
+                Performance nutrition, rooted in nature.
+              </p>
+              <p className={styles.footerLocation}>
+                📍 Glasgow, Scotland
+              </p>
+            </div>
+
+            {/* Menu links */}
+            <div className={styles.footerCol}>
+              <p className={styles.footerColTitle}>Menu</p>
+              {availableCategories.map(cat => (
+                <button
+                  key={cat.name}
+                  className={styles.footerLink}
+                  onClick={() => switchCategory(cat.name)}
+                >
+                  {cat.icon} {cat.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Info links */}
+            <div className={styles.footerCol}>
+              <p className={styles.footerColTitle}>Info</p>
+              <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
+              <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
+            </div>
+
+            {/* Order info */}
+            <div className={styles.footerCol}>
+              <p className={styles.footerColTitle}>Ordering</p>
+              <p className={styles.footerInfo}>
+                🗓️ <strong>Tuesdays only</strong><br />
+                Order by Monday midnight for Tuesday collection or delivery.
+              </p>
+            </div>
+
+          </div>
+
+          <div className={styles.footerBottom}>
+            <p className={styles.footerCopy}>
+              © {new Date().getFullYear()} Root + Fuel. All rights reserved.
+            </p>
+            <p className={styles.footerMade}>
+              Whole food · Locally sourced · Glasgow
+            </p>
+          </div>
+        </footer>
+
+
       </div>
     </>
   );
