@@ -40,17 +40,31 @@
   color: var(--text-muted); font-weight: 600; margin-bottom: 12px;
 }
 .typeGrid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+
+/* ── Type buttons: greyed out when inactive, green when selected ── */
 .typeBtn {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 18px 10px; border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg-subtle) !important; cursor: pointer;
+  border: 1px solid #d1d1d1;
+  background: #f0f0f0 !important; cursor: pointer;
   font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
-  color: var(--text-mid); transition: all 0.2s;
+  color: #aaaaaa; transition: all 0.2s;
+  opacity: 0.65;
 }
-.typeBtn:hover { border-color: var(--border-green); color: var(--green); background: var(--green-pale) !important; }
-.typeActive { border-color: var(--green) !important; background: var(--green-pale) !important; color: var(--green) !important; }
+.typeBtn:hover {
+  border-color: var(--border-green); color: var(--green);
+  background: var(--green-pale) !important; opacity: 1;
+}
+.typeActive {
+  border-color: var(--green) !important;
+  background: var(--green-pale) !important;
+  color: var(--green) !important;
+  opacity: 1;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(45,107,39,0.15);
+}
 .typeIcon { font-size: 24px; }
+
 .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 7px; }
 .fullWidth { grid-column: 1 / -1; }
@@ -109,7 +123,7 @@
   .panel { padding: 8px; }
 }
 
-/* ── Paste these at the bottom of OrderForm.module.css ── */
+/* ── Promo code styles ── */
 
 .promoRow {
   display: flex;
