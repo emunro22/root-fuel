@@ -5,10 +5,11 @@ import { Resend } from 'resend';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const resend  = new Resend(process.env.RESEND_API_KEY);
 
-// Hardcoded business email addresses
-const FROM_EMAIL  = 'onboarding@resend.dev';    // sends all emails
-const OWNER_EMAIL = 'amanthahamilton@rootandfuelltd.com'; // receives order notifications
-const DEV_EMAIL   = 'euanmunroo@gmail.com';               // dev copy
+// Email addresses
+const FROM_ORDERS     = 'orders@rootandfuelltd.com';           // sends order notifications
+const FROM_CONFIRM    = 'order-confirmation@rootandfuelltd.com'; // sends customer confirmations
+const OWNER_EMAIL     = 'samanthahamilton@rootandfuelltd.com'; // receives order notifications
+const DEV_EMAIL       = 'euanmunroo@gmail.com';                // dev copy
 
 export const config = { api: { bodyParser: false } };
 
@@ -189,7 +190,7 @@ export default async function handler(req, res) {
       console.error('Sheet error:', e);
     }
 
-    // 2. Email the customer
+    // 2. Email the customer (from order-confirmation@rootandfuelltd.com)
     try {
       const { subject, html } = buildCustomerEmail({
         orderId:   meta.orderId,
@@ -201,7 +202,7 @@ export default async function handler(req, res) {
         notes:     meta.notes,
       });
       await resend.emails.send({
-        from:    `Root + Fuel <${FROM_EMAIL}>`,
+        from:    `Root + Fuel <${FROM_CONFIRM}>`,
         to:      session.customer_email,
         subject,
         html,
@@ -210,7 +211,7 @@ export default async function handler(req, res) {
       console.error('Customer email error:', e);
     }
 
-    // 3. Notify the owner
+    // 3. Notify Samantha + dev (from orders@rootandfuelltd.com)
     try {
       const { subject, html } = buildOwnerEmail({
         orderId:   meta.orderId,
@@ -224,8 +225,8 @@ export default async function handler(req, res) {
         notes:     meta.notes,
       });
       await resend.emails.send({
-        from:    `Root + Fuel Orders <${FROM_EMAIL}>`,
-        to:      [DEV_EMAIL],
+        from:    `Root + Fuel Orders <${FROM_ORDERS}>`,
+        to:      [OWNER_EMAIL, DEV_EMAIL],
         subject,
         html,
       });
