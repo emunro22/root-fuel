@@ -4,6 +4,7 @@ import styles from '../styles/Home.module.css';
 import Cart from '../components/Cart';
 import MenuItem from '../components/MenuItem';
 import OrderForm from '../components/OrderForm';
+import CateringModal from '../components/CateringModal';
 
 const CATEGORIES = [
   { name: 'Starters', icon: '🥗' },
@@ -24,6 +25,7 @@ export default function Home() {
   const [showForm,       setShowForm]       = useState(false);
   const [cartBounce,     setCartBounce]     = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showCatering, setShowCatering] = useState(false);
 
   useEffect(() => {
     fetch('/api/menu')
@@ -111,6 +113,7 @@ export default function Home() {
                   >{cat.name}</button>
                 ))}
                 <button className={styles.navLink} onClick={scrollToAbout}>About</button>
+                <button className={styles.navLink} onClick={() => setShowCatering(true)}>Catering</button>
               </nav>
               <button
                 className={`${styles.cartBtn} ${cartBounce ? styles.bounce : ''} ${cartCount > 0 ? styles.cartBtnActive : ''}`}
@@ -158,6 +161,9 @@ export default function Home() {
                   </div>
                 </div>
                 <button className={styles.mobileAboutLink} onClick={scrollToAbout}>About Root + Fuel</button>
+                <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
+                🍽️ Catering Services
+                </button>
                 {cartCount > 0 && (
                   <div className={styles.mobileCartBar} onClick={() => { setShowCart(true); setMobileMenuOpen(false); }}>
                     <div className={styles.mobileCartBarLeft}>
@@ -346,6 +352,49 @@ export default function Home() {
 
         {showCart && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
         {showForm && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
+        {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
+
+        {/* ── Catering Banner ── */}
+        <div style={{
+          background: '#1a2418',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '48px 28px',
+          textAlign: 'center',
+        }}>
+          <p style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(26px, 4vw, 44px)',
+            fontWeight: 400,
+            color: '#ffffff',
+            marginBottom: '10px',
+            fontStyle: 'italic',
+          }}>
+            Planning an event?
+          </p>
+          <p style={{
+            fontSize: '15px', color: 'rgba(255,255,255,0.6)',
+            marginBottom: '24px', maxWidth: '460px', margin: '0 auto 24px',
+            lineHeight: 1.7,
+          }}>
+            We offer bespoke catering for corporate events, sports teams, and private functions — all built on whole food performance nutrition.
+          </p>
+          <button
+            onClick={() => setShowCatering(true)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: 'linear-gradient(135deg, #2d6b27, #4a9e40)',
+              color: 'white', border: 'none', padding: '14px 30px',
+              borderRadius: '100px', fontSize: '15px', fontWeight: 600,
+              cursor: 'pointer', boxShadow: '0 4px 20px rgba(45,107,39,0.4)',
+            }}
+          >
+            Enquire about catering
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
 
         {/* ── Footer ── paste this just before the closing </div> of the outer wrapper, after the showForm line */}
 
@@ -382,6 +431,7 @@ export default function Home() {
               <p className={styles.footerColTitle}>Info</p>
               <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
               <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
+              <button className={styles.footerLink} onClick={() => setShowCatering(true)}>🍽️ Catering Services</button>
             </div>
 
             {/* Order info */}
@@ -404,8 +454,6 @@ export default function Home() {
             </p>
           </div>
         </footer>
-
-
       </div>
     </>
   );
