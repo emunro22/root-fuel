@@ -6,12 +6,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const resend  = new Resend(process.env.RESEND_API_KEY);
 
 // Email addresses
-const FROM_ORDERS     = 'orders@rootandfuelltd.com';           // sends order notifications
-const FROM_CONFIRM    = 'order-confirmation@rootandfuelltd.com'; // sends customer confirmations
-const OWNER_EMAIL     = 'samanthahamilton@rootandfuelltd.com'; // receives order notifications
-const DEV_EMAIL       = 'euanmunroo@gmail.com';                // dev copy
+const FROM_ORDERS     = 'orders@rootandfuelltd.com';
+const FROM_CONFIRM    = 'order-confirmation@rootandfuelltd.com';
+const OWNER_EMAIL     = 'samanthahamilton@rootandfuelltd.com';
+const DEV_EMAIL       = 'euanmunroo@gmail.com';
 
 export const config = { api: { bodyParser: false } };
+
+// ✅ In-memory idempotency guard (prevents duplicate processing within same server instance)
+const processedEvents = new Set();
 
 async function buffer(readable) {
   const chunks = [];
@@ -157,6 +160,22 @@ export default async function handler(req, res) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // ✅ Respond to Stripe immediately — prevents Stripe retrying due to slow processing
+  res.json({ received: true });
+
+  // ✅ Idempotency check — skip if we've already handled this exact Stripe event
+  if (processedEvents.has(event.id)) {
+    console.log(`[webhook] Skipping duplicate event: ${event.id}`);
+    return;
+  }
+  processedEvents.add(event.id);
+
+  // Keep the set from growing unbounded on long-running servers
+  if (processedEvents.size > 500) {
+    const first = processedEvents.values().next().value;
+    processedEvents.delete(first);
+  }
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const meta    = session.metadata;
@@ -166,12 +185,12 @@ export default async function handler(req, res) {
       const slim = JSON.parse(meta.itemsJson || '[]');
       items = slim.map(i => ({ name: i.n, price: i.p, quantity: i.q }));
     } catch (e) {
-      console.error('Failed to parse itemsJson:', e);
+      console.error('[webhook] Failed to parse itemsJson:', e);
     }
 
     const amountPaid = session.amount_total / 100;
 
-    // 1. Write to Google Sheets
+    // 1. Write to Google Sheets (appendOrder checks for duplicate orderId internally)
     try {
       await appendOrder({
         orderId:  meta.orderId,
@@ -187,10 +206,10 @@ export default async function handler(req, res) {
         notes:    meta.notes,
       });
     } catch (e) {
-      console.error('Sheet error:', e);
+      console.error('[webhook] Sheet error:', e);
     }
 
-    // 2. Email the customer (from order-confirmation@rootandfuelltd.com)
+    // 2. Email the customer
     try {
       const { subject, html } = buildCustomerEmail({
         orderId:   meta.orderId,
@@ -208,10 +227,10 @@ export default async function handler(req, res) {
         html,
       });
     } catch (e) {
-      console.error('Customer email error:', e);
+      console.error('[webhook] Customer email error:', e);
     }
 
-    // 3. Notify Samantha + dev (from orders@rootandfuelltd.com)
+    // 3. Notify owner + dev
     try {
       const { subject, html } = buildOwnerEmail({
         orderId:   meta.orderId,
@@ -231,9 +250,7 @@ export default async function handler(req, res) {
         html,
       });
     } catch (e) {
-      console.error('Owner email error:', e);
+      console.error('[webhook] Owner email error:', e);
     }
   }
-
-  res.json({ received: true });
 }

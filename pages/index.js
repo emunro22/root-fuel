@@ -80,11 +80,12 @@ export default function Home() {
     <>
       <Head>
         <title>Root &amp; Fuel — Order Online</title>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="description" content="Performance nutrition, rooted in nature. Order online from Root & Fuel, Glasgow." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content={CREAM} />
       </Head>
-
       <div style={{ background: CREAM, minHeight: '100vh', color: '#1a2418' }}>
 
         {/* Tuesday banner */}
