@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { appendCateringEnquiry } from '../../lib/sheets';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -15,7 +16,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
 
-  // 1. Notify owner + dev
+  // 1. Log to Google Sheets ── NEW
+  try {
+    await appendCateringEnquiry({ name, email, phone, eventDate, guestCount, message });
+  } catch (e) {
+    console.error('Catering sheet error:', e);
+  }
+
+  // 2. Notify owner + dev
   try {
     await resend.emails.send({
       from:    `Root + Fuel Orders <${FROM_ORDERS}>`,
@@ -49,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to send enquiry.' });
   }
 
-  // 2. Auto-reply to customer
+  // 3. Auto-reply to customer
   try {
     await resend.emails.send({
       from:    `Root + Fuel <order-confirmation@rootandfuelltd.com>`,
@@ -82,7 +90,6 @@ export default async function handler(req, res) {
       `,
     });
   } catch (e) {
-    // Non-fatal — owner already notified
     console.error('Customer catering auto-reply error:', e);
   }
 
