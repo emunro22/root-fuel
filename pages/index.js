@@ -7,9 +7,10 @@ import OrderForm from '../components/OrderForm';
 import CateringModal from '../components/CateringModal';
 
 const CATEGORIES = [
-  { name: 'Starters', icon: '🥗' },
-  { name: 'Mains',    icon: '🍽️' },
-  { name: 'Desserts', icon: '🍮' },
+  { name: 'Starters',       icon: '🥗' },
+  { name: 'Mains',          icon: '🍽️' },
+  { name: 'Desserts',       icon: '🍮' },
+  { name: 'Overnight Oats', icon: '🌙' },
 ];
 
 const CREAM = '#f5f1ea';
@@ -20,12 +21,12 @@ export default function Home() {
   const [menu,           setMenu]           = useState([]);
   const [cart,           setCart]           = useState([]);
   const [loading,        setLoading]        = useState(true);
-  const [activeCategory, setActiveCategory] = useState('Starters');
+  const [activeCategory, setActiveCategory] = useState('Mains');
   const [showCart,       setShowCart]       = useState(false);
   const [showForm,       setShowForm]       = useState(false);
   const [cartBounce,     setCartBounce]     = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showCatering, setShowCatering] = useState(false);
+  const [showCatering,   setShowCatering]   = useState(false);
 
   useEffect(() => {
     fetch('/api/menu')
@@ -68,7 +69,7 @@ export default function Home() {
   const categoryItems = menu.filter(i => i.category === activeCategory);
   const availableCategories = CATEGORIES.filter(cat => menu.some(i => i.category === cat.name));
 
-  const scrollToMenu = () => { document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
+  const scrollToMenu  = () => { document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
   const scrollToAbout = () => { document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
   const switchCategory = (cat) => {
     setActiveCategory(cat);
@@ -98,11 +99,7 @@ export default function Home() {
         <header className={styles.header}>
           <div className={styles.headerInner}>
             <a className={styles.logo} href="/">
-              <img
-                src="/logo.png"
-                alt="Root + Fuel"
-                className={styles.logoImg}
-              />
+              <img src="/logo.png" alt="Root + Fuel" className={styles.logoImg} />
             </a>
             <div className={styles.headerRight}>
               <nav className={styles.desktopNav}>
@@ -163,7 +160,7 @@ export default function Home() {
                 </div>
                 <button className={styles.mobileAboutLink} onClick={scrollToAbout}>About Root + Fuel</button>
                 <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
-                🍽️ Catering Services
+                  🍽️ Catering Services
                 </button>
                 {cartCount > 0 && (
                   <div className={styles.mobileCartBar} onClick={() => { setShowCart(true); setMobileMenuOpen(false); }}>
@@ -189,7 +186,7 @@ export default function Home() {
           </>
         )}
 
-        {/* Hero — two column layout with logo on right */}
+        {/* Hero */}
         <section
           className={styles.hero}
           style={{ background: 'linear-gradient(155deg,#eaf4e8 0%,#f5f1ea 55%,#ede9e0 100%)' }}
@@ -197,7 +194,6 @@ export default function Home() {
           <div className={styles.heroBg} />
           <div className={styles.heroGrid} />
           <div className={styles.heroInner}>
-            {/* Left: text */}
             <div className={styles.heroContent}>
               <div className={styles.heroEyebrow}>
                 <span>🌿</span> Glasgow · Whole Food · Locally Sourced
@@ -230,7 +226,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* Right: logo image */}
             <div className={styles.heroImageWrap}>
               <img src="/logo.png" alt="Root + Fuel" className={styles.heroImage} />
             </div>
@@ -351,11 +346,11 @@ export default function Home() {
           </div>
         )}
 
-        {showCart && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
-        {showForm && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
+        {showCart  && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
+        {showForm  && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
         {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
 
-        {/* ── Catering Banner ── */}
+        {/* Catering Banner */}
         <div style={{
           background: '#1a2418',
           borderTop: '1px solid rgba(255,255,255,0.06)',
@@ -390,52 +385,34 @@ export default function Home() {
             }}
           >
             Enquire about catering
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
           </button>
         </div>
 
-        {/* ── Footer ── paste this just before the closing </div> of the outer wrapper, after the showForm line */}
-
+        {/* Footer */}
         <footer className={styles.footer}>
           <div className={styles.footerInner}>
-
-            {/* Brand column */}
             <div className={styles.footerBrand}>
               <img src="/logo.png" alt="Root + Fuel" className={styles.footerLogo} />
-              <p className={styles.footerTagline}>
-                Performance nutrition, rooted in nature.
-              </p>
-              <p className={styles.footerLocation}>
-                📍 Glasgow, Scotland
-              </p>
+              <p className={styles.footerTagline}>Performance nutrition, rooted in nature.</p>
+              <p className={styles.footerLocation}>📍 Glasgow, Scotland</p>
             </div>
-
-            {/* Menu links */}
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Menu</p>
               {availableCategories.map(cat => (
-                <button
-                  key={cat.name}
-                  className={styles.footerLink}
-                  onClick={() => switchCategory(cat.name)}
-                >
+                <button key={cat.name} className={styles.footerLink} onClick={() => switchCategory(cat.name)}>
                   {cat.icon} {cat.name}
                 </button>
               ))}
             </div>
-
-            {/* Info links */}
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Info</p>
               <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
               <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
               <button className={styles.footerLink} onClick={() => setShowCatering(true)}>🍽️ Catering Services</button>
             </div>
-
-            {/* Order info */}
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
@@ -443,18 +420,13 @@ export default function Home() {
                 Order by Monday midnight for Tuesday collection or delivery.
               </p>
             </div>
-
           </div>
-
           <div className={styles.footerBottom}>
-            <p className={styles.footerCopy}>
-              © {new Date().getFullYear()} Root + Fuel. All rights reserved.
-            </p>
-            <p className={styles.footerMade}>
-              Whole food · Locally sourced · Glasgow
-            </p>
+            <p className={styles.footerCopy}>© {new Date().getFullYear()} Root + Fuel. All rights reserved.</p>
+            <p className={styles.footerMade}>Whole food · Locally sourced · Glasgow</p>
           </div>
         </footer>
+
       </div>
     </>
   );
