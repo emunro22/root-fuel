@@ -4,8 +4,9 @@ import { v4 as uuidv4 } from 'uuid';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
+  console.log('Stripe key:', process.env.STRIPE_SECRET_KEY?.slice(0, 14));
   if (req.method !== 'POST') return res.status(405).end();
-
+  
   const { items, customer, orderType, table, address, notes, promotionCodeId } = req.body;
 
   if (!items?.length || !customer?.email || !customer?.name) {
