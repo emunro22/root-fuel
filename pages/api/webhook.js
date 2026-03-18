@@ -5,7 +5,6 @@ import { Resend } from 'resend';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const resend  = new Resend(process.env.RESEND_API_KEY);
 
-// Email addresses
 const FROM_ORDERS     = 'orders@rootandfuelltd.com';
 const FROM_CONFIRM    = 'order-confirmation@rootandfuelltd.com';
 const OWNER_EMAIL     = 'samanthahamilton@rootandfuelltd.com';
@@ -13,7 +12,6 @@ const DEV_EMAIL       = 'euanmunroo@gmail.com';
 
 export const config = { api: { bodyParser: false } };
 
-// ✅ In-memory idempotency guard (prevents duplicate processing within same server instance)
 const processedEvents = new Set();
 
 async function buffer(readable) {
@@ -23,7 +21,6 @@ async function buffer(readable) {
   return Buffer.concat(chunks);
 }
 
-// ─── Customer confirmation email ──────────────────────────────────────────────
 function buildCustomerEmail({ orderId, name, items, total, orderType, address, notes }) {
   const itemRows = items
     .map(i => `
@@ -46,21 +43,17 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
     html: `
       <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f5f1ea;padding:32px 16px;">
         <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
           <div style="background:#2d6b27;padding:32px 32px 24px;text-align:center;">
             <h1 style="color:#fff;font-size:26px;margin:0;font-weight:600;">Root + Fuel</h1>
             <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:15px;">Performance nutrition, rooted in nature</p>
           </div>
-
           <div style="padding:32px;">
             <h2 style="color:#1a2418;font-size:22px;margin:0 0 8px;">Order Confirmed ✅</h2>
             <p style="color:#555;margin:0 0 24px;">Hi ${name}, thanks for your order! Here's your summary:</p>
-
             <div style="background:#eaf4e8;border-radius:10px;padding:14px 18px;margin-bottom:24px;text-align:center;">
               <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7a8f77;">Order ID</p>
               <p style="margin:4px 0 0;font-size:22px;font-weight:700;color:#2d6b27;font-family:monospace;letter-spacing:2px;">${orderId}</p>
             </div>
-
             <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
               ${itemRows}
               <tr>
@@ -68,19 +61,15 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
                 <td style="padding:12px 0 0;font-weight:700;font-size:17px;color:#2d6b27;text-align:right;">£${total.toFixed(2)}</td>
               </tr>
             </table>
-
             <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
               ${deliveryLine}
               ${notesLine}
             </div>
-
             <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
               <p style="margin:0;color:#7a6000;font-size:14px;">🗓️ <strong>Remember:</strong> Orders are prepared and available every <strong>Tuesday</strong>.</p>
             </div>
-
             <p style="color:#aaa;font-size:13px;margin:0;">Questions? Reply to this email and we'll get back to you.</p>
           </div>
-
           <div style="background:#1a1a1a;padding:20px 32px;text-align:center;">
             <p style="color:#666;font-size:12px;margin:0;">© ${new Date().getFullYear()} Root + Fuel Ltd · Glasgow · Whole Food · Locally Sourced</p>
           </div>
@@ -90,7 +79,6 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   };
 }
 
-// ─── Owner notification email ─────────────────────────────────────────────────
 function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes }) {
   const itemRows = items
     .map(i => `
@@ -105,18 +93,15 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f5f5f5;padding:32px 16px;">
         <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
           <div style="background:#1a1a1a;padding:24px 32px;text-align:center;">
             <h1 style="color:#fff;font-size:20px;margin:0;">🛍️ New Order Received</h1>
           </div>
-
           <div style="padding:32px;">
             <div style="background:#eaf4e8;border-radius:10px;padding:14px 18px;margin-bottom:24px;text-align:center;">
               <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7a8f77;">Order ID</p>
               <p style="margin:4px 0 0;font-size:22px;font-weight:700;color:#2d6b27;font-family:monospace;">${orderId}</p>
               <p style="margin:6px 0 0;font-size:15px;font-weight:600;color:#1a1a1a;">£${total.toFixed(2)} · ${orderType === 'delivery' ? 'Delivery' : 'Collection'}</p>
             </div>
-
             <h3 style="color:#1a2418;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Customer</h3>
             <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
               <p style="margin:4px 0;color:#333;"><strong>Name:</strong> ${name}</p>
@@ -127,7 +112,6 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
                 : `<p style="margin:4px 0;color:#333;"><strong>Type:</strong> Collection (Tuesday)</p>`}
               ${notes ? `<p style="margin:4px 0;color:#333;"><strong>Notes:</strong> ${notes}</p>` : ''}
             </div>
-
             <h3 style="color:#1a2418;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Items</h3>
             <table style="width:100%;border-collapse:collapse;">
               ${itemRows}
@@ -143,7 +127,6 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
   };
 }
 
-// ─── Webhook handler ──────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -153,27 +136,19 @@ export default async function handler(req, res) {
 
   let event;
   try {
-    event = webhookSecret
-      ? stripe.webhooks.constructEvent(buf, sig, webhookSecret)
-      : JSON.parse(buf.toString());
+    event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Respond to Stripe immediately — prevents Stripe retrying due to slow processing
-  res.json({ received: true });
-
-  // ✅ Idempotency check — skip if we've already handled this exact Stripe event
+  // Idempotency check — skip duplicate events
   if (processedEvents.has(event.id)) {
     console.log(`[webhook] Skipping duplicate event: ${event.id}`);
-    return;
+    return res.json({ received: true });
   }
   processedEvents.add(event.id);
-
-  // Keep the set from growing unbounded on long-running servers
   if (processedEvents.size > 500) {
-    const first = processedEvents.values().next().value;
-    processedEvents.delete(first);
+    processedEvents.delete(processedEvents.values().next().value);
   }
 
   if (event.type === 'checkout.session.completed') {
@@ -190,7 +165,7 @@ export default async function handler(req, res) {
 
     const amountPaid = session.amount_total / 100;
 
-    // 1. Write to Google Sheets (appendOrder checks for duplicate orderId internally)
+    // 1. Write to Google Sheets
     try {
       await appendOrder({
         orderId:  meta.orderId,
@@ -253,4 +228,7 @@ export default async function handler(req, res) {
       console.error('[webhook] Owner email error:', e);
     }
   }
+
+  // ✅ Respond LAST — after all work is done
+  return res.json({ received: true });
 }
