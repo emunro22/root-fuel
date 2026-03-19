@@ -393,10 +393,10 @@ export default function Home() {
                 Nutrition that <em>performs</em><br />as hard as you do
               </h2>
               <p className={styles.aboutText}>
-                Root + Fuel was born from a simple belief — that real, whole food is the most powerful performance tool available. We source locally from Glasgow&apos;s finest producers and craft every dish with intention, keeping ingredients clean, honest, and nutrient-dense.
+                Root + Fuel was born from a simple belief, that real, whole food is the most powerful performance tool available. We source locally from Glasgow&apos;s finest producers and craft every dish with intention, keeping ingredients clean, honest, and nutrient-dense.
               </p>
               <p className={styles.aboutText}>
-                Every Tuesday we prepare a fresh batch of orders ready for collection or delivery. No compromise, no shortcuts — just food that genuinely fuels your body and your goals.
+                Every Tuesday we prepare a fresh batch of orders ready for collection or delivery. No compromise, no shortcuts, just food that genuinely fuels your body and your goals.
               </p>
             </div>
             <div className={styles.aboutVisual}>
