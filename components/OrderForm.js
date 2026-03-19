@@ -208,6 +208,29 @@ export default function OrderForm({ cart, onClose }) {
                   Delivery available within 15 miles of Glasgow G13. A £2.99 delivery fee will be added.
                 </p>
               )}
+              {orderType === 'pickup' && (
+                <div style={{
+                  margin: '10px 0 0',
+                  background: '#eaf4e8',
+                  border: '1px solid rgba(45,107,39,0.2)',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'flex-start',
+                }}>
+                  <span style={{ fontSize: '16px', marginTop: '1px' }}>📍</span>
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#2d6b27', marginBottom: '2px' }}>Collection Address</p>
+                    <p style={{ fontSize: '13px', color: '#3d5239', lineHeight: 1.6 }}>
+                      64 Cowdenhill Road<br />Glasgow, G13 2HE
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#7a8f77', marginTop: '4px' }}>
+                      Ready for collection every Tuesday.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit}>
