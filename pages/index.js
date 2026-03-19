@@ -18,28 +18,35 @@ const CREAM = '#f5f1ea';
 const WHITE = '#ffffff';
 const GREEN = '#2d6b27';
 
-function getNextMondayMidnight() {
+/**
+ * Ordering schedule:
+ *   Wed 00:00 → Mon 23:59:59  — OPEN   (countdown to Monday midnight)
+ *   Tue 00:00 → Tue 23:59:59  — LOCKED (orders being fulfilled)
+ *
+ * "Monday midnight" means the very end of Monday, i.e. 23:59:59 on Monday.
+ * Orders lock the moment Tuesday begins (00:00:00).
+ * Orders reopen the moment Wednesday begins (00:00:00).
+ */
+function getOrderingStatus() {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
-  // days until next Monday
-  let daysUntilMonday = (1 - day + 7) % 7;
-  if (daysUntilMonday === 0) daysUntilMonday = 7; // if today is Monday, next Monday
-  const nextMonday = new Date(now);
-  nextMonday.setDate(now.getDate() + daysUntilMonday);
-  nextMonday.setHours(23, 59, 59, 999);
-  return nextMonday;
-}
+  const day = now.getDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
 
-function isOrderingLocked() {
-  const now = new Date();
-  const day = now.getDay();
-  // Locked on Tuesday (2) all day, and after Monday midnight
-  if (day === 2) return true;
-  if (day === 1) {
-    // Monday — locked after midnight (23:59:59)
-    if (now.getHours() === 23 && now.getMinutes() === 59 && now.getSeconds() >= 59) return true;
-  }
-  return false;
+  // Locked all day Tuesday
+  if (day === 2) return { locked: true, target: null };
+
+  // Build the target: end of this coming Monday (23:59:59.999)
+  // "coming Monday" means the next Monday from today, or today if today is Monday
+  let daysUntilMonday = (1 - day + 7) % 7;
+  if (daysUntilMonday === 0) daysUntilMonday = 0; // today is Monday
+  const target = new Date(now);
+  target.setDate(now.getDate() + daysUntilMonday);
+  target.setHours(23, 59, 59, 999);
+
+  // If we've passed Monday midnight — should already be Tue and caught above,
+  // but guard just in case of clock drift
+  if (now >= target && day === 1) return { locked: true, target: null };
+
+  return { locked: false, target };
 }
 
 function useCountdown() {
@@ -48,25 +55,29 @@ function useCountdown() {
 
   useEffect(() => {
     const tick = () => {
-      if (isOrderingLocked()) {
+      const { locked: isLocked, target } = getOrderingStatus();
+
+      if (isLocked || !target) {
         setLocked(true);
         setTimeLeft(null);
         return;
       }
-      setLocked(false);
-      const target = getNextMondayMidnight();
+
       const diff = target - new Date();
       if (diff <= 0) {
         setLocked(true);
         setTimeLeft(null);
         return;
       }
+
+      setLocked(false);
       const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setTimeLeft({ days, hours, minutes, seconds });
     };
+
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -280,7 +291,7 @@ export default function Home() {
                       Orders Closed
                     </div>
                     <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
-                      Ordering is closed for this week. Orders re-open Wednesday morning for next Tuesday's batch.
+                      Ordering is closed while we fulfil this week's batch. Orders reopen Wednesday at midnight for next Tuesday's collection or delivery.
                     </div>
                   </div>
                 ) : timeLeft ? (
@@ -372,7 +383,7 @@ export default function Home() {
                 fontWeight: 500,
                 fontSize: '15px',
               }}>
-                Orders are currently closed. Browse the menu below — ordering reopens Wednesday morning for next Tuesday.
+                Orders are currently closed while we fulfil this week's batch. Browse the menu below — ordering reopens Wednesday at midnight.
               </div>
             )}
 
