@@ -26,14 +26,15 @@ function haversineDistanceMiles(lat1, lng1, lat2, lng2) {
 }
 
 async function geocodeAddress(address) {
-  const encoded = encodeURIComponent(address);
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=gb`,
-    { headers: { 'Accept-Language': 'en', 'User-Agent': 'RootAndFuelApp/1.0' } }
+    `/api/geocode?address=${encodeURIComponent(address)}`
   );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Address not found');
+  }
   const data = await res.json();
-  if (!data || data.length === 0) throw new Error('Address not found');
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return { lat: data.lat, lng: data.lng };
 }
 
 export default function OrderForm({ cart, onClose }) {
