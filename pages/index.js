@@ -99,6 +99,23 @@ export default function Home() {
 
   const { timeLeft, locked } = useCountdown();
 
+  // ── Hero food image carousel ──────────────────────────────────────────────
+  // Add your food photo filenames to /public/food/ and list them here.
+  const FOOD_IMAGES = [
+    '/food/dish1.jpg',
+    '/food/dish2.jpg',
+    '/food/dish3.jpg',
+    '/food/dish4.jpg',
+  ];
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  useEffect(() => {
+    if (FOOD_IMAGES.length < 2) return;
+    const id = setInterval(() => {
+      setCarouselIndex(i => (i + 1) % FOOD_IMAGES.length);
+    }, 3500);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     fetch('/api/menu')
       .then(r => r.json())
@@ -265,7 +282,6 @@ export default function Home() {
           style={{ background: 'linear-gradient(155deg,#eaf4e8 0%,#f5f1ea 55%,#ede9e0 100%)' }}
         >
           <div className={styles.heroBg} />
-          <div className={styles.heroGrid} />
           <div className={styles.heroInner}>
             <div className={styles.heroContent}>
               <h1 className={styles.heroTitle}>
@@ -336,7 +352,34 @@ export default function Home() {
               )}
             </div>
             <div className={styles.heroImageWrap}>
-              <img src="/logo.png" alt="Root + Fuel" className={styles.heroImage} />
+              {FOOD_IMAGES.length > 0 ? (
+                <div className={styles.heroCarousel}>
+                  {FOOD_IMAGES.map((src, i) => (
+                    <div
+                      key={src}
+                      className={`${styles.heroCarouselSlide} ${i === carouselIndex ? styles.active : ''}`}
+                    >
+                      <img src={src} alt={`Root + Fuel dish ${i + 1}`} />
+                    </div>
+                  ))}
+                  <div className={styles.heroCarouselDots}>
+                    {FOOD_IMAGES.map((_, i) => (
+                      <button
+                        key={i}
+                        className={`${styles.heroCarouselDot} ${i === carouselIndex ? styles.activeDot : ''}`}
+                        onClick={() => setCarouselIndex(i)}
+                        aria-label={`Go to slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.heroCarousel}>
+                  <div className={styles.heroCarouselFallback}>
+                    <img src="/logo.png" alt="Root + Fuel" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
