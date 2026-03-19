@@ -3,9 +3,47 @@ import { v4 as uuidv4 } from 'uuid';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+/**
+ * Server-side ordering schedule (Europe/London time):
+ *   Wed 00:00 → Mon 23:59:59  — OPEN
+ *   Tue 00:00 → Tue 23:59:59  — LOCKED
+ */
+function isOrderingLocked() {
+  const now = new Date();
+
+  const ukParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  }).formatToParts(now);
+
+  const day  = ukParts.find(p => p.type === 'weekday')?.value; // 'Mon', 'Tue', etc.
+  const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
+  const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
+  const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
+
+  // All of Tuesday is locked
+  if (day === 'Tue') return true;
+
+  // Belt-and-braces: Monday at exactly 23:59:59
+  if (day === 'Mon' && hour === 23 && min === 59 && sec === 59) return true;
+
+  return false;
+}
+
 export default async function handler(req, res) {
   console.log('Stripe key:', process.env.STRIPE_SECRET_KEY?.slice(0, 14));
   if (req.method !== 'POST') return res.status(405).end();
+
+  // ── Server-side ordering lock ──────────────────────────────────────────────
+  if (isOrderingLocked()) {
+    return res.status(403).json({
+      error: 'Ordering is currently closed. Orders are accepted Wednesday through Monday midnight for Tuesday collection or delivery.',
+    });
+  }
 
   const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee } = req.body;
 
