@@ -101,6 +101,12 @@ export default function Home() {
     '/food/dish2.jpg',
     '/food/dish3.jpg',
     '/food/dish4.jpg',
+    '/food/dish5.jpg',
+    '/food/dish6.jpg',
+    '/food/dish7.jpg',
+    '/food/dish8.jpg',
+    '/food/dish9.jpg',
+    '/food/dish10.jpg',
   ];
   const [carouselIndex, setCarouselIndex] = useState(0);
   useEffect(() => {
