@@ -507,7 +507,7 @@ export default function Home() {
             marginBottom: '24px', maxWidth: '460px', margin: '0 auto 24px',
             lineHeight: 1.7,
           }}>
-            We offer bespoke catering for corporate events, sports teams, and private functions — all built on whole food performance nutrition.
+            We offer bespoke catering for corporate events, sports teams, and private functions, all built on whole food performance nutrition.
           </p>
           <button
             onClick={() => setShowCatering(true)}
