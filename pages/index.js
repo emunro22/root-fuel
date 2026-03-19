@@ -20,31 +20,26 @@ const GREEN = '#2d6b27';
 
 /**
  * Ordering schedule:
- *   Wed 00:00 → Mon 23:59:59  — OPEN   (countdown to Monday midnight)
- *   Tue 00:00 → Tue 23:59:59  — LOCKED (orders being fulfilled)
+ *   Wed 00:00 → Sat 23:59:59  — OPEN   (countdown to Saturday midnight)
+ *   Sun 00:00 → Tue 23:59:59  — LOCKED (orders closed)
  *
- * "Monday midnight" means the very end of Monday, i.e. 23:59:59 on Monday.
- * Orders lock the moment Tuesday begins (00:00:00).
- * Orders reopen the moment Wednesday begins (00:00:00).
+ * Cutoff is Saturday midnight. Orders reopen Wednesday morning.
  */
 function getOrderingStatus() {
   const now = new Date();
   const day = now.getDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
 
-  // Locked all day Tuesday
-  if (day === 2) return { locked: true, target: null };
+  // Locked Sunday (0), Monday (1), Tuesday (2)
+  if (day === 0 || day === 1 || day === 2) return { locked: true, target: null };
 
-  // Build the target: end of this coming Monday (23:59:59.999)
-  // "coming Monday" means the next Monday from today, or today if today is Monday
-  let daysUntilMonday = (1 - day + 7) % 7;
-  if (daysUntilMonday === 0) daysUntilMonday = 0; // today is Monday
+  // Build the target: end of this coming Saturday (23:59:59.999)
+  const daysUntilSaturday = (6 - day + 7) % 7; // 0 if today is Saturday
   const target = new Date(now);
-  target.setDate(now.getDate() + daysUntilMonday);
+  target.setDate(now.getDate() + daysUntilSaturday);
   target.setHours(23, 59, 59, 999);
 
-  // If we've passed Monday midnight — should already be Tue and caught above,
-  // but guard just in case of clock drift
-  if (now >= target && day === 1) return { locked: true, target: null };
+  // Guard: if we've somehow passed Saturday midnight
+  if (now >= target && day === 6) return { locked: true, target: null };
 
   return { locked: false, target };
 }
@@ -183,7 +178,7 @@ export default function Home() {
         {/* Tuesday banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
           🗓️ <strong>Orders &amp; collections are available on Tuesdays only.</strong>{' '}
-          Place your order by Monday midnight for Tuesday pickup or delivery.
+          Place your order by Saturday midnight for Tuesday pickup or delivery.
         </div>
 
         {/* Header */}
@@ -307,13 +302,13 @@ export default function Home() {
                       Orders Closed
                     </div>
                     <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
-                      Ordering is closed while we fulfil this week's batch. Orders reopen Wednesday at midnight for next Tuesday's collection or delivery.
+                      Ordering is closed while we fulfil this week's batch. Orders reopen Wednesday for next Tuesday's collection or delivery.
                     </div>
                   </div>
                 ) : timeLeft ? (
                   <>
                     <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '12px' }}>
-                      Order deadline — Monday midnight
+                      Order deadline — Saturday midnight
                     </div>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       {[
@@ -390,13 +385,25 @@ export default function Home() {
             <div>
               <span className={styles.aboutLabel}>Our Story</span>
               <h2 className={styles.aboutTitle}>
-                Nutrition that <em>performs</em><br />as hard as you do
+                I didn&apos;t start Root &amp; Fuel<br />because it was <em>easy</em>
               </h2>
               <p className={styles.aboutText}>
-                Root + Fuel was born from a simple belief, that real, whole food is the most powerful performance tool available. We source locally from Glasgow&apos;s finest producers and craft every dish with intention, keeping ingredients clean, honest, and nutrient-dense.
+                I&apos;m Samantha, a 35-year-old mum of two, with a lifelong love of cooking — but it wasn&apos;t until 2020 that food became something much deeper than just flavour. After being diagnosed with ADHD and struggling with ongoing gut issues including IBS, endometriosis, chronic bloating, and persistent stomach pain, I was forced to take a hard look at what I was putting into my body.
               </p>
               <p className={styles.aboutText}>
-                Every Tuesday we prepare a fresh batch of orders ready for collection or delivery. No compromise, no shortcuts, just food that genuinely fuels your body and your goals.
+                What I found was simple, but powerful: the more I relied on overly processed foods, the worse I felt — physically, mentally, and hormonally. So, I started to change things.
+              </p>
+              <p className={styles.aboutText}>
+                When I had my first baby in 2021, I began focusing on whole, nourishing foods for my family. I kept a food diary, tracked how different ingredients made me feel, and slowly built a way of eating that supported not just my body, but my brain too. The difference was undeniable — more energy, better focus, less discomfort, and a completely different relationship with food.
+              </p>
+              <p className={styles.aboutText}>
+                Fast forward to 2025, I was given the opportunity to step away from the corporate world and build something of my own — something that genuinely mattered. Root &amp; Fuel is the result of that journey.
+              </p>
+              <p className={styles.aboutText}>
+                We are a small, family run business with a clear mission: to make real, fresh, nourishing food more accessible for busy people — without compromising on quality, flavour, or nutrition. Whether you&apos;re a busy parent, a corporate professional, or someone trying to fuel an active lifestyle, we bridge the gap between convenience and quality.
+              </p>
+              <p className={styles.aboutText}>
+                Nothing we do is overly complicated or pretentious. It&apos;s simply good food, made with intention and purpose. Because when you eat better, you feel better. And when you feel better, everything else starts to follow.
               </p>
             </div>
             <div className={styles.aboutVisual}>
@@ -426,7 +433,7 @@ export default function Home() {
                 fontWeight: 500,
                 fontSize: '15px',
               }}>
-                Orders are currently closed while we fulfil this week's batch. Browse the menu below — ordering reopens Wednesday at midnight.
+                Orders are currently closed while we fulfil this week's batch. Browse the menu below — ordering reopens Wednesday for next Tuesday.
               </div>
             )}
 
@@ -507,7 +514,7 @@ export default function Home() {
             marginBottom: '24px', maxWidth: '460px', margin: '0 auto 24px',
             lineHeight: 1.7,
           }}>
-            We offer bespoke catering for corporate events, sports teams, and private functions, all built on whole food performance nutrition.
+            We offer bespoke catering for corporate events, sports teams, and private functions — all built on whole food performance nutrition.
           </p>
           <button
             onClick={() => setShowCatering(true)}

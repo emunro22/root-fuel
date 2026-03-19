@@ -5,8 +5,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /**
  * Server-side ordering schedule (Europe/London time):
- *   Wed 00:00 → Mon 23:59:59  — OPEN
- *   Tue 00:00 → Tue 23:59:59  — LOCKED
+ *   Wed 00:00 → Sat 23:59:59  — OPEN
+ *   Sun 00:00 → Tue 23:59:59  — LOCKED
  */
 function isOrderingLocked() {
   const now = new Date();
@@ -25,11 +25,11 @@ function isOrderingLocked() {
   const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
 
-  // All of Tuesday is locked
-  if (day === 'Tue') return true;
+  // Locked Sunday, Monday, Tuesday
+  if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
 
-  // Belt-and-braces: Monday at exactly 23:59:59
-  if (day === 'Mon' && hour === 23 && min === 59 && sec === 59) return true;
+  // Belt-and-braces: Saturday at exactly 23:59:59
+  if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
 
   return false;
 }
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   // ── Server-side ordering lock ──────────────────────────────────────────────
   if (isOrderingLocked()) {
     return res.status(403).json({
-      error: 'Ordering is currently closed. Orders are accepted Wednesday through Monday midnight for Tuesday collection or delivery.',
+      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
     });
   }
 
