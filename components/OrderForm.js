@@ -2,21 +2,27 @@ import { useState } from 'react';
 import styles from './OrderForm.module.css';
 
 const ORDER_TYPES = [
-  { id: 'pickup',   label: 'Collection', icon: '🛍️' },
-  { id: 'delivery', label: 'Delivery (+£2.99)', icon: '🚴' },
+  { id: 'pickup',   label: 'Collection',  icon: '🛍️' },
+  { id: 'delivery', label: 'Delivery',    icon: '🚴' },
 ];
 
-const DELIVERY_FEE = 2.99;
-
-// Origin: 64 Cowdenhill Rd, Glasgow G13 2HE
+// Origin: All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE
 const ORIGIN_LAT = 55.8821;
 const ORIGIN_LNG = -4.3714;
 const MAX_MILES  = 15;
 
+// Distance-based delivery pricing
+// ≤ 3 miles  → £3.00 (local: Knightswood, Drumchapel, Yoker etc.)
+// 3–15 miles → £5.00 (Faifley, Milngavie, Old Kilpatrick, Bowling, Bishopton etc.)
+function getDeliveryFee(miles) {
+  if (miles <= 3) return 3.00;
+  return 5.00;
+}
+
 function toRad(deg) { return deg * Math.PI / 180; }
 
 function haversineDistanceMiles(lat1, lng1, lat2, lng2) {
-  const R = 3958.8; // Earth radius in miles
+  const R = 3958.8;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
   const a =
@@ -44,10 +50,11 @@ export default function OrderForm({ cart, onClose }) {
   const [error,     setError]     = useState('');
 
   // Address validation state
-  const [addressChecking, setAddressChecking]   = useState(false);
-  const [addressValid,    setAddressValid]       = useState(null); // null | true | false
-  const [addressError,    setAddressError]       = useState('');
-  const [addressDistance, setAddressDistance]    = useState(null);
+  const [addressChecking, setAddressChecking] = useState(false);
+  const [addressValid,    setAddressValid]     = useState(null); // null | true | false
+  const [addressError,    setAddressError]     = useState('');
+  const [addressDistance, setAddressDistance]  = useState(null);
+  const [deliveryFee,     setDeliveryFee]      = useState(null); // set after address check
 
   // Promo code state
   const [promoCode,    setPromoCode]    = useState('');
@@ -55,9 +62,9 @@ export default function OrderForm({ cart, onClose }) {
   const [promoError,   setPromoError]   = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
 
-  const cartSubtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const deliveryFee  = orderType === 'delivery' ? DELIVERY_FEE : 0;
-  const cartTotal    = cartSubtotal + deliveryFee;
+  const cartSubtotal  = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const appliedFee    = orderType === 'delivery' && deliveryFee !== null ? deliveryFee : 0;
+  const cartTotal     = cartSubtotal + appliedFee;
 
   const discountAmount = promoResult
     ? promoResult.discount.type === 'percent'
@@ -73,6 +80,7 @@ export default function OrderForm({ cart, onClose }) {
     setAddressValid(null);
     setAddressError('');
     setAddressDistance(null);
+    setDeliveryFee(null);
   };
 
   const checkDeliveryRadius = async () => {
@@ -84,11 +92,14 @@ export default function OrderForm({ cart, onClose }) {
     setAddressValid(null);
     setAddressError('');
     setAddressDistance(null);
+    setDeliveryFee(null);
     try {
       const { lat, lng } = await geocodeAddress(form.address);
       const miles = haversineDistanceMiles(ORIGIN_LAT, ORIGIN_LNG, lat, lng);
       setAddressDistance(miles);
       if (miles <= MAX_MILES) {
+        const fee = getDeliveryFee(miles);
+        setDeliveryFee(fee);
         setAddressValid(true);
       } else {
         setAddressValid(false);
@@ -155,7 +166,7 @@ export default function OrderForm({ cart, onClose }) {
           address: form.address,
           notes: form.notes,
           promotionCodeId: promoResult?.promotionCodeId || null,
-          deliveryFee: orderType === 'delivery' ? DELIVERY_FEE : 0,
+          deliveryFee: orderType === 'delivery' ? (deliveryFee || 0) : 0,
         }),
       });
       const data = await res.json();
@@ -205,7 +216,7 @@ export default function OrderForm({ cart, onClose }) {
               </div>
               {orderType === 'delivery' && (
                 <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                  Delivery available within 15 miles of Glasgow G13. A £2.99 delivery fee will be added.
+                  Delivery available within 15 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your address below and click Check to confirm your fee.
                 </p>
               )}
               {orderType === 'pickup' && (
@@ -297,9 +308,9 @@ export default function OrderForm({ cart, onClose }) {
                           {addressError}
                         </p>
                       )}
-                      {addressValid === true && addressDistance !== null && (
+                      {addressValid === true && addressDistance !== null && deliveryFee !== null && (
                         <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#2d6b27', lineHeight: 1.4 }}>
-                          ✓ Address confirmed — {addressDistance.toFixed(1)} miles from our kitchen. Within delivery range.
+                          ✓ Address confirmed — {addressDistance.toFixed(1)} miles away. Delivery fee: <strong>£{deliveryFee.toFixed(2)}</strong>
                         </p>
                       )}
                     </div>
@@ -322,11 +333,17 @@ export default function OrderForm({ cart, onClose }) {
                     </div>
                   ))}
 
-                  {/* Delivery fee line */}
-                  {orderType === 'delivery' && (
+                  {/* Delivery fee line — only shown once address is checked */}
+                  {orderType === 'delivery' && deliveryFee !== null && (
                     <div className={styles.summaryRow} style={{ color: '#7a8f77' }}>
                       <span>Delivery fee</span>
-                      <span>£{DELIVERY_FEE.toFixed(2)}</span>
+                      <span>£{deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {orderType === 'delivery' && deliveryFee === null && (
+                    <div className={styles.summaryRow} style={{ color: '#7a8f77', fontStyle: 'italic' }}>
+                      <span>Delivery fee</span>
+                      <span>Check address</span>
                     </div>
                   )}
 
