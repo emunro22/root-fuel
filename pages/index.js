@@ -387,7 +387,7 @@ export default function Home() {
               <h2 className={styles.aboutTitle}>
                 I didn&apos;t start Root &amp; Fuel<br />because it was <em>easy</em>
               </h2>
-              <p className={styles.aboutText}>
+              <p className={styles.aboutLead}>
                 I&apos;m Samantha, a 35-year-old mum of two, with a lifelong love of cooking — but it wasn&apos;t until 2020 that food became something much deeper than just flavour. After being diagnosed with ADHD and struggling with ongoing gut issues including IBS, endometriosis, chronic bloating, and persistent stomach pain, I was forced to take a hard look at what I was putting into my body.
               </p>
               <p className={styles.aboutText}>
