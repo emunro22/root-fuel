@@ -7,15 +7,73 @@ import OrderForm from '../components/OrderForm';
 import CateringModal from '../components/CateringModal';
 
 const CATEGORIES = [
-  { name: 'Starters',       icon: '🥗' },
-  { name: 'Mains',          icon: '🍽️' },
-  { name: 'Desserts',       icon: '🍮' },
-  { name: 'Overnight Oats', icon: '🌙' },
+  { name: 'Starters',       icon: '' },
+  { name: 'Mains',          icon: '' },
+  { name: 'Desserts',       icon: '' },
+  { name: 'Overnight Oats', icon: '' },
+  { name: 'Poke Bowls',     icon: '' },
 ];
 
 const CREAM = '#f5f1ea';
 const WHITE = '#ffffff';
 const GREEN = '#2d6b27';
+
+function getNextMondayMidnight() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+  // days until next Monday
+  let daysUntilMonday = (1 - day + 7) % 7;
+  if (daysUntilMonday === 0) daysUntilMonday = 7; // if today is Monday, next Monday
+  const nextMonday = new Date(now);
+  nextMonday.setDate(now.getDate() + daysUntilMonday);
+  nextMonday.setHours(23, 59, 59, 999);
+  return nextMonday;
+}
+
+function isOrderingLocked() {
+  const now = new Date();
+  const day = now.getDay();
+  // Locked on Tuesday (2) all day, and after Monday midnight
+  if (day === 2) return true;
+  if (day === 1) {
+    // Monday — locked after midnight (23:59:59)
+    if (now.getHours() === 23 && now.getMinutes() === 59 && now.getSeconds() >= 59) return true;
+  }
+  return false;
+}
+
+function useCountdown() {
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    const tick = () => {
+      if (isOrderingLocked()) {
+        setLocked(true);
+        setTimeLeft(null);
+        return;
+      }
+      setLocked(false);
+      const target = getNextMondayMidnight();
+      const diff = target - new Date();
+      if (diff <= 0) {
+        setLocked(true);
+        setTimeLeft(null);
+        return;
+      }
+      const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft({ days, hours, minutes, seconds });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return { timeLeft, locked };
+}
 
 export default function Home() {
   const [menu,           setMenu]           = useState([]);
@@ -27,6 +85,8 @@ export default function Home() {
   const [cartBounce,     setCartBounce]     = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCatering,   setShowCatering]   = useState(false);
+
+  const { timeLeft, locked } = useCountdown();
 
   useEffect(() => {
     fetch('/api/menu')
@@ -47,6 +107,7 @@ export default function Home() {
   }, [mobileMenuOpen, showCart, showForm]);
 
   const addToCart = useCallback((item) => {
+    if (locked) return;
     setCart(prev => {
       const existing = prev.find(c => c.name === item.name);
       if (existing) return prev.map(c => c.name === item.name ? { ...c, quantity: c.quantity + 1 } : c);
@@ -54,7 +115,7 @@ export default function Home() {
     });
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 400);
-  }, []);
+  }, [locked]);
 
   const removeFromCart = useCallback((item) => {
     setCart(prev => {
@@ -76,6 +137,8 @@ export default function Home() {
     setMobileMenuOpen(false);
     setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 50);
   };
+
+  const pad = n => String(n).padStart(2, '0');
 
   return (
     <>
@@ -152,7 +215,6 @@ export default function Home() {
                         className={`${styles.mobileCatBtn} ${activeCategory === cat.name ? styles.mobileCatActive : ''}`}
                         onClick={() => switchCategory(cat.name)}
                       >
-                        <span className={styles.mobileCatIcon}>{cat.icon}</span>
                         <span>{cat.name}</span>
                       </button>
                     ))}
@@ -160,7 +222,7 @@ export default function Home() {
                 </div>
                 <button className={styles.mobileAboutLink} onClick={scrollToAbout}>About Root + Fuel</button>
                 <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
-                  🍽️ Catering Services
+                  Catering Services
                 </button>
                 {cartCount > 0 && (
                   <div className={styles.mobileCartBar} onClick={() => { setShowCart(true); setMobileMenuOpen(false); }}>
@@ -195,9 +257,6 @@ export default function Home() {
           <div className={styles.heroGrid} />
           <div className={styles.heroInner}>
             <div className={styles.heroContent}>
-              <div className={styles.heroEyebrow}>
-                <span>🌿</span> Glasgow · Whole Food · Locally Sourced
-              </div>
               <h1 className={styles.heroTitle}>
                 Fuel your<br />
                 <span className={styles.heroTitleAccent}>performance</span>
@@ -205,26 +264,65 @@ export default function Home() {
               <p className={styles.heroSub}>
                 Performance nutrition rooted in nature. Fresh, whole food crafted for those who demand more from what they eat.
               </p>
-              <button className={styles.heroCta} onClick={scrollToMenu}>
-                View Menu
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 5v14M5 12l7 7 7-7"/>
-                </svg>
-              </button>
-              <div className={styles.heroStats}>
-                <div className={styles.heroStat}>
-                  <div className={styles.heroStatNum}>{loading ? '—' : menu.length}</div>
-                  <div className={styles.heroStatLabel}>Menu Items</div>
-                </div>
-                <div className={styles.heroStat}>
-                  <div className={styles.heroStatNum}>2</div>
-                  <div className={styles.heroStatLabel}>Order Types</div>
-                </div>
-                <div className={styles.heroStat}>
-                  <div className={styles.heroStatNum}>100%</div>
-                  <div className={styles.heroStatLabel}>Whole Food</div>
-                </div>
+
+              {/* Countdown Timer */}
+              <div style={{
+                margin: '28px 0 24px',
+                background: locked ? 'rgba(180,30,30,0.08)' : 'rgba(45,107,39,0.08)',
+                border: `1px solid ${locked ? 'rgba(180,30,30,0.2)' : 'rgba(45,107,39,0.2)'}`,
+                borderRadius: '16px',
+                padding: '20px 24px',
+                maxWidth: '420px',
+              }}>
+                {locked ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#b41e1e', marginBottom: '6px' }}>
+                      Orders Closed
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
+                      Ordering is closed for this week. Orders re-open Wednesday morning for next Tuesday's batch.
+                    </div>
+                  </div>
+                ) : timeLeft ? (
+                  <>
+                    <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '12px' }}>
+                      Order deadline — Monday midnight
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      {[
+                        { val: timeLeft.days,    label: 'Days' },
+                        { val: timeLeft.hours,   label: 'Hrs' },
+                        { val: timeLeft.minutes, label: 'Min' },
+                        { val: timeLeft.seconds, label: 'Sec' },
+                      ].map((t, i) => (
+                        <div key={i} style={{ textAlign: 'center', flex: 1 }}>
+                          <div style={{
+                            background: WHITE,
+                            borderRadius: '10px',
+                            padding: '10px 4px 8px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                            fontFamily: 'monospace',
+                            fontSize: 'clamp(22px, 4vw, 32px)',
+                            fontWeight: 700,
+                            color: '#1a2418',
+                            lineHeight: 1,
+                          }}>{pad(t.val)}</div>
+                          <div style={{ fontSize: '10px', color: '#8a9e87', marginTop: '5px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </div>
+
+              {!locked && (
+                <button className={styles.heroCta} onClick={scrollToMenu}>
+                  View Menu
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                  </svg>
+                </button>
+              )}
             </div>
             <div className={styles.heroImageWrap}>
               <img src="/logo.png" alt="Root + Fuel" className={styles.heroImage} />
@@ -246,48 +344,12 @@ export default function Home() {
               <p className={styles.aboutText}>
                 Every Tuesday we prepare a fresh batch of orders ready for collection or delivery. No compromise, no shortcuts — just food that genuinely fuels your body and your goals.
               </p>
-              <div className={styles.aboutPillars}>
-                <div className={styles.aboutPillar}>
-                  <div className={styles.aboutPillarIcon}>🌱</div>
-                  <div className={styles.aboutPillarTitle}>Whole Foods Only</div>
-                  <div className={styles.aboutPillarText}>No ultra-processed ingredients. Every item is as close to its natural state as possible.</div>
-                </div>
-                <div className={styles.aboutPillar}>
-                  <div className={styles.aboutPillarIcon}>📍</div>
-                  <div className={styles.aboutPillarTitle}>Locally Sourced</div>
-                  <div className={styles.aboutPillarText}>We work with local Glasgow and Scottish suppliers wherever possible.</div>
-                </div>
-                <div className={styles.aboutPillar}>
-                  <div className={styles.aboutPillarIcon}>💪</div>
-                  <div className={styles.aboutPillarTitle}>Performance Focused</div>
-                  <div className={styles.aboutPillarText}>Recipes built around macro balance and micronutrient density for active people.</div>
-                </div>
-                <div className={styles.aboutPillar}>
-                  <div className={styles.aboutPillarIcon}>🗓️</div>
-                  <div className={styles.aboutPillarTitle}>Tuesday Orders</div>
-                  <div className={styles.aboutPillarText}>Fresh weekly batches every Tuesday for collection or delivery.</div>
-                </div>
-              </div>
             </div>
             <div className={styles.aboutVisual}>
               <div className={styles.aboutVisualCard} style={{ background: 'linear-gradient(145deg,#eaf4e8 0%,#f5f1ea 100%)' }}>
                 <div className={styles.aboutVisualPattern} />
                 <img src="/logo.png" alt="Root + Fuel" className={styles.aboutLogoLarge} />
                 <p className={styles.aboutTagline}>&ldquo;Performance nutrition,<br />rooted in nature.&rdquo;</p>
-                <div className={styles.aboutStats}>
-                  <div className={styles.aboutStatItem}>
-                    <span className={styles.aboutStatNum}>100%</span>
-                    <span className={styles.aboutStatLabel}>Whole Food</span>
-                  </div>
-                  <div className={styles.aboutStatItem}>
-                    <span className={styles.aboutStatNum}>Local</span>
-                    <span className={styles.aboutStatLabel}>Sourced</span>
-                  </div>
-                  <div className={styles.aboutStatItem}>
-                    <span className={styles.aboutStatNum}>Tue</span>
-                    <span className={styles.aboutStatLabel}>Orders</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -296,6 +358,24 @@ export default function Home() {
         {/* Menu */}
         <div style={{ background: CREAM, width: '100%' }}>
           <main id="menu" style={{ background: CREAM, maxWidth: '1180px', margin: '0 auto', padding: '60px 28px 110px', scrollMarginTop: '70px' }}>
+
+            {/* Locked banner inside menu section */}
+            {locked && (
+              <div style={{
+                background: '#fff3f3',
+                border: '1px solid rgba(180,30,30,0.2)',
+                borderRadius: '12px',
+                padding: '18px 24px',
+                marginBottom: '32px',
+                textAlign: 'center',
+                color: '#b41e1e',
+                fontWeight: 500,
+                fontSize: '15px',
+              }}>
+                Orders are currently closed. Browse the menu below — ordering reopens Wednesday morning for next Tuesday.
+              </div>
+            )}
+
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Our <span className={styles.sectionTitleSub}>Menu</span></h2>
               <nav className={styles.catNav}>
@@ -322,6 +402,7 @@ export default function Home() {
                     onAdd={() => addToCart(item)}
                     onRemove={() => removeFromCart(item)}
                     delay={i * 60}
+                    locked={locked}
                   />
                 ))}
                 {categoryItems.length === 0 && <p className={styles.empty}>Nothing here right now.</p>}
@@ -330,8 +411,8 @@ export default function Home() {
           </main>
         </div>
 
-        {/* Sticky order */}
-        {cartCount > 0 && !mobileMenuOpen && (
+        {/* Sticky order — hidden when locked */}
+        {cartCount > 0 && !mobileMenuOpen && !locked && (
           <div className={styles.stickyOrder}>
             <button className={styles.orderBtn} onClick={() => setShowForm(true)}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -347,7 +428,7 @@ export default function Home() {
         )}
 
         {showCart  && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
-        {showForm  && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
+        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
         {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
 
         {/* Catering Banner */}
@@ -397,13 +478,13 @@ export default function Home() {
             <div className={styles.footerBrand}>
               <img src="/logo.png" alt="Root + Fuel" className={styles.footerLogo} />
               <p className={styles.footerTagline}>Performance nutrition, rooted in nature.</p>
-              <p className={styles.footerLocation}>📍 Glasgow, Scotland</p>
+              <p className={styles.footerLocation}>Glasgow, Scotland</p>
             </div>
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Menu</p>
               {availableCategories.map(cat => (
                 <button key={cat.name} className={styles.footerLink} onClick={() => switchCategory(cat.name)}>
-                  {cat.icon} {cat.name}
+                  {cat.name}
                 </button>
               ))}
             </div>
@@ -411,12 +492,12 @@ export default function Home() {
               <p className={styles.footerColTitle}>Info</p>
               <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
               <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
-              <button className={styles.footerLink} onClick={() => setShowCatering(true)}>🍽️ Catering Services</button>
+              <button className={styles.footerLink} onClick={() => setShowCatering(true)}>Catering Services</button>
             </div>
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
-                🗓️ <strong>Tuesdays only</strong><br />
+                <strong>Tuesdays only</strong><br />
                 Order by Monday midnight for Tuesday collection or delivery.
               </p>
             </div>

@@ -1,9 +1,9 @@
 import styles from './MenuItem.module.css';
 
-export default function MenuItem({ item, quantity, onAdd, onRemove, delay }) {
+export default function MenuItem({ item, quantity, onAdd, onRemove, delay, locked }) {
   return (
     <div
-      className={`${styles.card} ${quantity > 0 ? styles.cardHasItem : ''}`}
+      className={`${styles.card} ${quantity > 0 ? styles.cardHasItem : ''} ${locked ? styles.cardLocked : ''}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Image or placeholder */}
@@ -33,7 +33,16 @@ export default function MenuItem({ item, quantity, onAdd, onRemove, delay }) {
         <div className={styles.footer}>
           <span className={styles.price}>£{item.price.toFixed(2)}</span>
           <div className={styles.controls}>
-            {quantity > 0 ? (
+            {locked ? (
+              <span style={{
+                fontSize: '12px',
+                color: '#b41e1e',
+                fontWeight: 500,
+                padding: '6px 10px',
+                background: 'rgba(180,30,30,0.07)',
+                borderRadius: '8px',
+              }}>Closed</span>
+            ) : quantity > 0 ? (
               <>
                 <button className={styles.qtyBtn} onClick={onRemove} aria-label="Remove one">−</button>
                 <span className={styles.qty}>{quantity}</span>

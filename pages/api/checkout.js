@@ -6,20 +6,23 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export default async function handler(req, res) {
   console.log('Stripe key:', process.env.STRIPE_SECRET_KEY?.slice(0, 14));
   if (req.method !== 'POST') return res.status(405).end();
-  
-  const { items, customer, orderType, table, address, notes, promotionCodeId } = req.body;
+
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee } = req.body;
 
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   const orderId = `ORD-${uuidv4().slice(0, 6).toUpperCase()}`;
-  const total   = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const appUrl  = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const fee = orderType === 'delivery' ? (deliveryFee || 2.99) : 0;
+  const total = itemsTotal + fee;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const slimItems = items.map(i => ({ n: i.name, p: i.price, q: i.quantity }));
   const itemsJson = JSON.stringify(slimItems);
 
+  // Build line items — menu items first, then delivery fee if applicable
   const lineItems = items.map(item => ({
     price_data: {
       currency: 'gbp',
@@ -28,6 +31,17 @@ export default async function handler(req, res) {
     },
     quantity: item.quantity,
   }));
+
+  if (orderType === 'delivery' && fee > 0) {
+    lineItems.push({
+      price_data: {
+        currency: 'gbp',
+        product_data: { name: 'Delivery Fee' },
+        unit_amount: Math.round(fee * 100),
+      },
+      quantity: 1,
+    });
+  }
 
   try {
     const sessionParams = {
@@ -45,6 +59,7 @@ export default async function handler(req, res) {
         notes:     (notes   || '').slice(0, 200),
         itemsJson: itemsJson.slice(0, 490),
         total:     total.toFixed(2),
+        deliveryFee: fee.toFixed(2),
       },
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url:  `${appUrl}/?cancelled=true`,
