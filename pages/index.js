@@ -193,15 +193,10 @@ export default function Home() {
           gap: '24px',
           flexWrap: 'wrap',
         }}>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>Meal Prep</span>
+          <span style={{ fontSize: '20px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>MEAL PREP</span>
           <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>Catering</span>
+          <span style={{ fontSize: '20px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>CATERING</span>
           <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
-          <span style={{ fontSize: '13px', fontWeight: 400, color: '#7a8f77', letterSpacing: '0.3px' }}>Whole Food</span>
-          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
-          <span style={{ fontSize: '13px', fontWeight: 400, color: '#7a8f77', letterSpacing: '0.3px' }}>Locally Sourced</span>
-          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
-          <span style={{ fontSize: '13px', fontWeight: 400, color: '#7a8f77', letterSpacing: '0.3px' }}>Glasgow Delivery &amp; Collection</span>
         </div>
 
         {/* Header */}
