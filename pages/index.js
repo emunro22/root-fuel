@@ -104,7 +104,9 @@ export default function Home() {
     '/food/dish4.jpg',
     '/food/dish5.jpg',
     '/food/dish6.jpg',
+    '/food/dish7.jpg',
     '/food/dish8.jpg',
+    '/food/dish9.jpg',
     '/food/dish10.jpg',
   ];
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -544,7 +546,7 @@ export default function Home() {
             <div className={styles.footerBrand}>
               <img src="/logo.png" alt="Root + Fuel" className={styles.footerLogo} />
               <p className={styles.footerTagline}>Performance nutrition, rooted in nature.</p>
-              <p className={styles.footerLocation}>Glasgow, Scotland</p>
+              <p className={styles.footerLocation}>All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE</p>
             </div>
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Menu</p>
