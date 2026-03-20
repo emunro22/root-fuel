@@ -178,7 +178,7 @@ export default function Home() {
 
         {/* Tuesday banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
-          🗓️ <strong>Orders &amp; collections are available on Tuesdays only.</strong>{' '}
+          <strong>Orders &amp; collections are available on Tuesdays only.</strong>{' '}
           Place your order by Saturday midnight for Tuesday pickup or delivery.
         </div>
 
