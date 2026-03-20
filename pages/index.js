@@ -186,35 +186,22 @@ export default function Home() {
         <div style={{
           background: WHITE,
           borderBottom: '1px solid rgba(0,0,0,0.07)',
-          padding: '10px 28px',
+          padding: '11px 28px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '8px',
+          gap: '24px',
           flexWrap: 'wrap',
         }}>
-          {[
-            { icon: '🥗', label: 'Fresh Meal Prep' },
-            { icon: '🍱', label: 'Weekly Batch Cooking' },
-            { icon: '🤸', label: 'Performance Nutrition' },
-            { icon: '🍽️', label: 'Event Catering' },
-            { icon: '🌿', label: 'Whole Food Only' },
-            { icon: '📍', label: 'Glasgow Delivery & Collection' },
-          ].map((item, i, arr) => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '12.5px', color: '#3d5239', fontWeight: 500,
-                letterSpacing: '0.2px',
-              }}>
-                <span style={{ fontSize: '14px' }}>{item.icon}</span>
-                {item.label}
-              </div>
-              {i < arr.length - 1 && (
-                <span style={{ color: 'rgba(0,0,0,0.15)', fontSize: '14px' }}>·</span>
-              )}
-            </div>
-          ))}
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>Meal Prep</span>
+          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>Catering</span>
+          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
+          <span style={{ fontSize: '13px', fontWeight: 400, color: '#7a8f77', letterSpacing: '0.3px' }}>Whole Food</span>
+          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
+          <span style={{ fontSize: '13px', fontWeight: 400, color: '#7a8f77', letterSpacing: '0.3px' }}>Locally Sourced</span>
+          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
+          <span style={{ fontSize: '13px', fontWeight: 400, color: '#7a8f77', letterSpacing: '0.3px' }}>Glasgow Delivery &amp; Collection</span>
         </div>
 
         {/* Header */}
