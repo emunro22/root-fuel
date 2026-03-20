@@ -102,12 +102,6 @@ export default function Home() {
     '/food/dish2.jpg',
     '/food/dish3.jpg',
     '/food/dish4.jpg',
-    '/food/dish5.jpg',
-    '/food/dish6.jpg',
-    '/food/dish7.jpg',
-    '/food/dish8.jpg',
-    '/food/dish9.jpg',
-    '/food/dish10.jpg',
   ];
   const [carouselIndex, setCarouselIndex] = useState(0);
   useEffect(() => {
@@ -186,6 +180,41 @@ export default function Home() {
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
           🗓️ <strong>Orders &amp; collections are available on Tuesdays only.</strong>{' '}
           Place your order by Saturday midnight for Tuesday pickup or delivery.
+        </div>
+
+        {/* Welcome / what we do banner */}
+        <div style={{
+          background: WHITE,
+          borderBottom: '1px solid rgba(0,0,0,0.07)',
+          padding: '10px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+        }}>
+          {[
+            { icon: '🥗', label: 'Fresh Meal Prep' },
+            { icon: '🍱', label: 'Weekly Batch Cooking' },
+            { icon: '🤸', label: 'Performance Nutrition' },
+            { icon: '🍽️', label: 'Event Catering' },
+            { icon: '🌿', label: 'Whole Food Only' },
+            { icon: '📍', label: 'Glasgow Delivery & Collection' },
+          ].map((item, i, arr) => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '12.5px', color: '#3d5239', fontWeight: 500,
+                letterSpacing: '0.2px',
+              }}>
+                <span style={{ fontSize: '14px' }}>{item.icon}</span>
+                {item.label}
+              </div>
+              {i < arr.length - 1 && (
+                <span style={{ color: 'rgba(0,0,0,0.15)', fontSize: '14px' }}>·</span>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Header */}
@@ -566,7 +595,7 @@ export default function Home() {
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
                 <strong>Tuesdays only</strong><br />
-                Order by Monday midnight for Tuesday collection or delivery.
+                Order by Saturday midnight for Tuesday collection or delivery.
               </p>
             </div>
           </div>
