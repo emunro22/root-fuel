@@ -267,7 +267,7 @@
   font-size: 28px; letter-spacing: 3px; text-transform: uppercase;
   color: var(--green); font-weight: 700;
   background: var(--green-pale) !important; padding: 7px 18px; border-radius: 100px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 .aboutTitle {
   font-family: 'Cormorant Garamond', serif;
@@ -277,7 +277,7 @@
 }
 .aboutTitle em { font-style: italic; color: var(--green); }
 .aboutText {
-  font-size: 17px; color: var(--text-mid); line-height: 1.9; margin-bottom: 18px;
+  font-size: 15px; color: var(--text-mid); line-height: 1.9; margin-bottom: 18px;
 }
 .aboutLead {
   font-size: 17px; color: var(--text-mid); line-height: 1.85; margin-bottom: 22px;
@@ -292,7 +292,7 @@
   border-radius: 28px; overflow: hidden;
   padding: 52px 40px;
   display: flex; flex-direction: column; align-items: center;
-  gap: 28px; text-align: center;
+  gap: 24px; text-align: center;
   position: relative;
 }
 .aboutVisualPattern {
@@ -389,19 +389,31 @@
 .orderBtn:hover { background: #111111 !important; transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,0.45); }
 .orderBtnDivider { width: 1px; height: 16px; background: rgba(255,255,255,0.25); }
 
-/* ─── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
   .aboutInner { grid-template-columns: 1fr; gap: 44px; }
   .aboutVisualCard { padding: 40px 28px; }
 }
 @media (max-width: 900px) {
-  .heroInner { grid-template-columns: 1fr; }
-  .heroImageWrap { display: none; }
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  /* Show carousel on mobile, stacked below text, portrait ratio */
+  .heroImageWrap {
+    display: flex;
+    justify-content: center;
+  }
+  .heroCarousel {
+    max-width: 100%;
+    width: 100%;
+    aspect-ratio: 3/4;
+    border-radius: 16px;
+  }
 }
 @media (max-width: 768px) {
   .desktopNav { display: none; }
   .hamburger { display: flex; }
-  .hero { padding: 60px 20px 56px; }
+  .hero { padding: 48px 20px 48px; }
   .heroStats { gap: 24px; }
   .about { padding: 60px 20px; }
   .menuSection { padding: 40px 16px 90px; }
@@ -412,6 +424,7 @@
 @media (max-width: 480px) {
   .heroStats { flex-wrap: wrap; gap: 20px; }
   .aboutStats { gap: 20px; }
+  .heroCarousel { width: 100%; max-width: 100%; aspect-ratio: 3/4; border-radius: 12px; }
 }
 
 /* ─── Footer ──────────────────────────────────────────── */
