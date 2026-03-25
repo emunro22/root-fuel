@@ -34,6 +34,35 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
     ? `<p style="margin:4px 0;color:#555;"><strong>Delivery to:</strong> ${address}</p>`
     : `<p style="margin:4px 0;color:#555;"><strong>Collection slot:</strong> ${collectionSlot || 'Tuesday pickup'}</p>`;
 
+  const collectionInfo = orderType !== 'delivery' ? `
+    <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin:16px 0;">
+      <p style="margin:0 0 10px;color:#333;font-size:14px;line-height:1.6;">
+        We ask that you arrive on time but appreciate delays can happen — just send a DM on Instagram so we know whether to put your order back in the fridge.
+      </p>
+
+      <p style="margin:0 0 12px;color:#b07800;font-size:14px;font-weight:bold;background:#fff8e1;padding:10px 14px;border-radius:6px;">
+        Please do not arrive before your slot — food is made to order and will not be bagged.
+      </p>
+
+      <div style="background:#ffffff;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+        <p style="margin:0 0 6px;font-size:12px;color:#888;text-transform:uppercase;">Address</p>
+        <p style="margin:0;color:#2d6b27;font-weight:600;line-height:1.6;">
+          All Tots Nursery<br>
+          64 Cowdenhill Road<br>
+          G13 2HE
+        </p>
+      </div>
+
+      <p style="margin:0 0 10px;color:#333;font-size:14px;line-height:1.6;">
+        We have a small carpark — message the page to confirm your arrival and we will bring your food to you.
+      </p>
+
+      <p style="margin:0;color:#b07800;font-size:14px;font-weight:bold;background:#fff8e1;padding:10px 14px;border-radius:6px;">
+        Please do not ring the bell as it belongs to the nursery next door and we will not hear it.
+      </p>
+    </div>
+  ` : '';
+
   const notesLine = notes
     ? `<p style="margin:4px 0;color:#555;"><strong>Notes:</strong> ${notes}</p>`
     : '';
@@ -50,10 +79,12 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
           <div style="padding:32px;">
             <h2 style="color:#1a2418;font-size:22px;margin:0 0 8px;">Order Confirmed ✅</h2>
             <p style="color:#555;margin:0 0 24px;">Hi ${name}, thanks for your order! Here's your summary:</p>
+
             <div style="background:#eaf4e8;border-radius:10px;padding:14px 18px;margin-bottom:24px;text-align:center;">
               <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7a8f77;">Order ID</p>
               <p style="margin:4px 0 0;font-size:22px;font-weight:700;color:#2d6b27;font-family:monospace;letter-spacing:2px;">${orderId}</p>
             </div>
+
             <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
               ${itemRows}
               <tr>
@@ -61,67 +92,23 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
                 <td style="padding:12px 0 0;font-weight:700;font-size:17px;color:#2d6b27;text-align:right;">£${total.toFixed(2)}</td>
               </tr>
             </table>
+
             <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
               ${deliveryLine}
               ${notesLine}
             </div>
+
+            ${collectionInfo}
+
             <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
               <p style="margin:0;color:#7a6000;font-size:14px;">🗓️ <strong>Remember:</strong> Orders are prepared and available every <strong>Tuesday</strong>.</p>
             </div>
+
             <p style="color:#aaa;font-size:13px;margin:0;">Questions? Reply to this email and we'll get back to you.</p>
           </div>
+
           <div style="background:#1a1a1a;padding:20px 32px;text-align:center;">
             <p style="color:#666;font-size:12px;margin:0;">© ${new Date().getFullYear()} Root + Fuel Ltd · Glasgow · Whole Food · Locally Sourced</p>
-          </div>
-        </div>
-      </div>
-    `,
-  };
-}
-
-function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes, collectionSlot }) {
-  const itemRows = items
-    .map(i => `
-      <tr>
-        <td style="padding:6px 0;border-bottom:1px solid #eee;">${i.quantity}× ${i.name}</td>
-        <td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;">£${(i.price * i.quantity).toFixed(2)}</td>
-      </tr>`)
-    .join('');
-
-  const typeDisplay = orderType === 'delivery'
-    ? `<p style="margin:4px 0;color:#333;"><strong>Deliver to:</strong> ${address}</p>`
-    : `<p style="margin:4px 0;color:#333;"><strong>Type:</strong> Collection — ${collectionSlot || 'Tuesday'}</p>`;
-
-  return {
-    subject: `🛍️ New order ${orderId} — £${total.toFixed(2)} (${orderType})`,
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f5f5f5;padding:32px 16px;">
-        <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-          <div style="background:#1a1a1a;padding:24px 32px;text-align:center;">
-            <h1 style="color:#fff;font-size:20px;margin:0;">🛍️ New Order Received</h1>
-          </div>
-          <div style="padding:32px;">
-            <div style="background:#eaf4e8;border-radius:10px;padding:14px 18px;margin-bottom:24px;text-align:center;">
-              <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7a8f77;">Order ID</p>
-              <p style="margin:4px 0 0;font-size:22px;font-weight:700;color:#2d6b27;font-family:monospace;">${orderId}</p>
-              <p style="margin:6px 0 0;font-size:15px;font-weight:600;color:#1a1a1a;">£${total.toFixed(2)} · ${orderType === 'delivery' ? 'Delivery' : `Collection — ${collectionSlot || 'Tuesday'}`}</p>
-            </div>
-            <h3 style="color:#1a2418;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Customer</h3>
-            <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
-              <p style="margin:4px 0;color:#333;"><strong>Name:</strong> ${name}</p>
-              <p style="margin:4px 0;color:#333;"><strong>Email:</strong> ${email}</p>
-              <p style="margin:4px 0;color:#333;"><strong>Phone:</strong> ${phone || '—'}</p>
-              ${typeDisplay}
-              ${notes ? `<p style="margin:4px 0;color:#333;"><strong>Notes:</strong> ${notes}</p>` : ''}
-            </div>
-            <h3 style="color:#1a2418;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Items</h3>
-            <table style="width:100%;border-collapse:collapse;">
-              ${itemRows}
-              <tr>
-                <td style="padding:10px 0 0;font-weight:700;font-size:16px;color:#1a1a1a;">Total</td>
-                <td style="padding:10px 0 0;font-weight:700;font-size:16px;color:#2d6b27;text-align:right;">£${total.toFixed(2)}</td>
-              </tr>
-            </table>
           </div>
         </div>
       </div>
