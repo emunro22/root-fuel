@@ -6,6 +6,8 @@ const ORDER_TYPES = [
   { id: 'delivery', label: 'Delivery',    icon: '🚴' },
 ];
 
+const COLLECTION_SLOTS = ['13:00', '16:00', '17:00'];
+
 // Origin: All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE
 const ORIGIN_LAT = 55.8821;
 const ORIGIN_LNG = -4.3714;
@@ -59,6 +61,9 @@ export default function OrderForm({ cart, onClose }) {
   const [form,      setForm]      = useState({ name: '', email: '', phone: '', address: '', notes: '' });
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
+
+  // Collection slot
+  const [collectionSlot, setCollectionSlot] = useState('');
 
   // Address validation state
   const [addressChecking, setAddressChecking] = useState(false);
@@ -157,6 +162,9 @@ export default function OrderForm({ cart, onClose }) {
     if (!form.name.trim())                                return 'Please enter your name';
     if (!form.email.trim() || !form.email.includes('@'))  return 'Please enter a valid email';
     if (!form.phone.trim())                               return 'Please enter your phone number';
+    if (orderType === 'pickup') {
+      if (!collectionSlot) return 'Please select a collection time slot';
+    }
     if (orderType === 'delivery') {
       if (!form.address.trim()) return 'Please enter your delivery address';
       if (!isAddressSufficientlyDetailed(form.address))
@@ -184,6 +192,7 @@ export default function OrderForm({ cart, onClose }) {
           table: '',
           address: form.address,
           notes: form.notes,
+          collectionSlot: orderType === 'pickup' ? collectionSlot : null,
           promotionCodeId: promoResult?.promotionCodeId || null,
           deliveryFee: orderType === 'delivery' ? (deliveryFee || 0) : 0,
         }),
@@ -226,6 +235,7 @@ export default function OrderForm({ cart, onClose }) {
                       setAddressValid(null);
                       setAddressError('');
                       setAddressDistance(null);
+                      setCollectionSlot('');
                     }}
                   >
                     <span className={styles.typeIcon}>{t.icon}</span>
@@ -264,6 +274,48 @@ export default function OrderForm({ cart, onClose }) {
             </div>
 
             <form onSubmit={handleSubmit}>
+
+              {/* Collection slot picker */}
+              {orderType === 'pickup' && (
+                <div className={styles.section}>
+                  <span className={styles.sectionLabel}>Collection Time Slot *</span>
+                  <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
+                    Food is made to order — please do not arrive before your chosen slot.
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {COLLECTION_SLOTS.map(slot => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setCollectionSlot(slot)}
+                        style={{
+                          flex: 1,
+                          padding: '12px 8px',
+                          borderRadius: '10px',
+                          border: collectionSlot === slot
+                            ? '2px solid #2d6b27'
+                            : '2px solid #d4e6d0',
+                          background: collectionSlot === slot ? '#2d6b27' : '#fff',
+                          color: collectionSlot === slot ? '#fff' : '#3d5239',
+                          fontSize: '16px',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                  {collectionSlot && (
+                    <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#2d6b27', fontWeight: 600 }}>
+                      ✓ {collectionSlot} slot selected
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Customer details */}
               <div className={styles.section}>
@@ -354,6 +406,14 @@ export default function OrderForm({ cart, onClose }) {
                       <span>£{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
+
+                  {/* Collection slot summary line */}
+                  {orderType === 'pickup' && collectionSlot && (
+                    <div className={styles.summaryRow} style={{ color: '#7a8f77' }}>
+                      <span>Collection slot</span>
+                      <span>{collectionSlot}</span>
+                    </div>
+                  )}
 
                   {/* Delivery fee line — only shown once address is checked */}
                   {orderType === 'delivery' && deliveryFee !== null && (
