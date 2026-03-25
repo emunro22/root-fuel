@@ -20,15 +20,12 @@ function isOrderingLocked() {
     hour12: false,
   }).formatToParts(now);
 
-  const day  = ukParts.find(p => p.type === 'weekday')?.value; // 'Mon', 'Tue', etc.
+  const day  = ukParts.find(p => p.type === 'weekday')?.value;
   const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
   const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
 
-  // Locked Sunday, Monday, Tuesday
   if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
-
-  // Belt-and-braces: Saturday at exactly 23:59:59
   if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
 
   return false;
@@ -38,14 +35,13 @@ export default async function handler(req, res) {
   console.log('Stripe key:', process.env.STRIPE_SECRET_KEY?.slice(0, 14));
   if (req.method !== 'POST') return res.status(405).end();
 
-  // ── Server-side ordering lock ──────────────────────────────────────────────
   if (isOrderingLocked()) {
     return res.status(403).json({
       error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
     });
   }
 
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee } = req.body;
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot } = req.body;
 
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -60,7 +56,6 @@ export default async function handler(req, res) {
   const slimItems = items.map(i => ({ n: i.name, p: i.price, q: i.quantity }));
   const itemsJson = JSON.stringify(slimItems);
 
-  // Build line items — menu items first, then delivery fee if applicable
   const lineItems = items.map(item => ({
     price_data: {
       currency: 'gbp',
@@ -89,15 +84,16 @@ export default async function handler(req, res) {
       customer_email: customer.email,
       metadata: {
         orderId,
-        customerName:  customer.name.slice(0, 100),
-        customerPhone: (customer.phone  || '').slice(0, 20),
+        customerName:   customer.name.slice(0, 100),
+        customerPhone:  (customer.phone  || '').slice(0, 20),
         orderType,
-        table:     (table   || '').slice(0, 50),
-        address:   (address || '').slice(0, 200),
-        notes:     (notes   || '').slice(0, 200),
-        itemsJson: itemsJson.slice(0, 490),
-        total:     total.toFixed(2),
-        deliveryFee: fee.toFixed(2),
+        table:          (table          || '').slice(0, 50),
+        address:        (address        || '').slice(0, 200),
+        notes:          (notes          || '').slice(0, 200),
+        itemsJson:      itemsJson.slice(0, 490),
+        total:          total.toFixed(2),
+        deliveryFee:    fee.toFixed(2),
+        collectionSlot: (collectionSlot || '').slice(0, 20),
       },
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url:  `${appUrl}/?cancelled=true`,
