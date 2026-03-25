@@ -43,6 +43,17 @@ async function geocodeAddress(address) {
   return { lat: data.lat, lng: data.lng };
 }
 
+// Basic check that an address looks complete enough:
+// must contain at least one number, some text, and a UK postcode pattern
+const UK_POSTCODE_REGEX = /[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i;
+function isAddressSufficientlyDetailed(address) {
+  const trimmed = address.trim();
+  const hasNumber   = /\d/.test(trimmed);
+  const hasText     = /[a-zA-Z]{3,}/.test(trimmed);
+  const hasPostcode = UK_POSTCODE_REGEX.test(trimmed);
+  return hasNumber && hasText && hasPostcode;
+}
+
 export default function OrderForm({ cart, onClose }) {
   const [orderType, setOrderType] = useState('pickup');
   const [form,      setForm]      = useState({ name: '', email: '', phone: '', address: '', notes: '' });
@@ -86,6 +97,11 @@ export default function OrderForm({ cart, onClose }) {
   const checkDeliveryRadius = async () => {
     if (!form.address.trim()) {
       setAddressError('Please enter a delivery address first.');
+      return;
+    }
+    if (!isAddressSufficientlyDetailed(form.address)) {
+      setAddressError('Please enter a full address including street number, street name, and postcode (e.g. 12 Main Street, Glasgow, G13 2HE).');
+      setAddressValid(false);
       return;
     }
     setAddressChecking(true);
@@ -140,8 +156,11 @@ export default function OrderForm({ cart, onClose }) {
   const validate = () => {
     if (!form.name.trim())                                return 'Please enter your name';
     if (!form.email.trim() || !form.email.includes('@'))  return 'Please enter a valid email';
+    if (!form.phone.trim())                               return 'Please enter your phone number';
     if (orderType === 'delivery') {
       if (!form.address.trim()) return 'Please enter your delivery address';
+      if (!isAddressSufficientlyDetailed(form.address))
+        return 'Please enter a full address including street number, street name, and postcode';
       if (addressValid === null) return 'Please check your delivery address using the "Check" button';
       if (addressValid === false) return 'Your address is outside our delivery area (15 miles from Glasgow G13)';
     }
@@ -216,7 +235,7 @@ export default function OrderForm({ cart, onClose }) {
               </div>
               {orderType === 'delivery' && (
                 <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                  Delivery available within 15 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your address below and click Check to confirm your fee.
+                  Delivery available within 15 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your full address below and click Check to confirm your fee.
                 </p>
               )}
               {orderType === 'pickup' && (
@@ -259,16 +278,19 @@ export default function OrderForm({ cart, onClose }) {
                     <input className={styles.input} type="email" placeholder="your@email.com" value={form.email} onChange={e => set('email', e.target.value)} />
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Phone</label>
-                    <input className={styles.input} type="tel" placeholder="Optional" value={form.phone} onChange={e => set('phone', e.target.value)} />
+                    <label className={styles.label}>Phone *</label>
+                    <input className={styles.input} type="tel" placeholder="Your phone number" value={form.phone} onChange={e => set('phone', e.target.value)} />
                   </div>
                   {orderType === 'delivery' && (
                     <div className={`${styles.field} ${styles.fullWidth}`}>
                       <label className={styles.label}>Delivery Address *</label>
+                      <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#7a8f77' }}>
+                        Please include house number, street name, town/city, and postcode
+                      </p>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                         <textarea
                           className={`${styles.input} ${styles.textarea}`}
-                          placeholder="Full delivery address including postcode"
+                          placeholder="e.g. 12 Main Street, Knightswood, Glasgow, G13 2AB"
                           value={form.address}
                           onChange={e => handleAddressChange(e.target.value)}
                           rows={3}
