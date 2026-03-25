@@ -30,9 +30,29 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
     </tr>
   `).join('');
 
-  const deliveryLine = orderType === 'delivery'
+  // Specific text for Collection vs Delivery
+  const instructionsBlock = orderType === 'delivery'
     ? `<p style="margin:15px 0 5px; color:#555;"><strong>Delivery Address:</strong><br/>${address}</p>`
-    : `<p style="margin:15px 0 5px; color:#555;"><strong>Collection slot:</strong> ${collectionSlot || '13:00'}</p>`;
+    : `
+      <div style="margin-top:20px; padding:15px; background:#f9fcf9; border-radius:12px; border:1px solid #e1eee1;">
+        <p style="margin:0 0 10px; color:#316431; font-weight:bold; font-size:16px;">Collection Details</p>
+        <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Slot:</strong> ${collectionSlot || '13:00'}</p>
+        <p style="margin:0 0 15px; color:#555; font-size:14px;"><strong>Address:</strong><br/>All Tots Nursery, 64 Cowdenhill Road, G13 2HE</p>
+        
+        <p style="margin:0 0 10px; font-size:13px; color:#666; line-height:1.4;">
+          We ask that you arrive on time but appreciate delays can happen, just send a DM on insta so we know whether to put your order back in the fridge.
+        </p>
+        
+        <p style="margin:0 0 10px; font-size:13px; color:#c68a12; font-weight:bold; line-height:1.4;">
+          Please do not arrive before your slot, food is made to order and will not be bagged.
+        </p>
+
+        <p style="margin:0; font-size:13px; color:#666; line-height:1.4;">
+          We have a small carpark, message the page to confirm your arrival and we will bring your food to you. 
+          <strong>Please do not ring the bell</strong> as it belongs to the nursery next door and we will not hear it.
+        </p>
+      </div>
+    `;
 
   return {
     subject: `Your Root + Fuel order is confirmed! (${orderId})`,
@@ -55,13 +75,8 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
               </tr>
             </table>
 
-            ${deliveryLine}
-            ${notes ? `<p style="margin:10px 0; font-size:14px; color:#666; background:#f9f9f9; padding:10px; border-radius:8px;"><strong>Notes:</strong> ${notes}</p>` : ''}
-
-            <div style="margin-top:25px; padding-top:20px; border-top:1px solid #eee; font-size:13px; color:#777; line-height:1.6;">
-              <p>We ask that you arrive on time but appreciate delays can happen — just send a DM on Instagram so we know whether to put your order back in the fridge.</p>
-              <p style="color:#c68a12; font-weight:bold;">Please do not arrive before your slot — food is made to order and will not be bagged.</p>
-            </div>
+            ${instructionsBlock}
+            ${notes ? `<p style="margin:15px 0; font-size:14px; color:#666; background:#f9f9f9; padding:10px; border-radius:8px;"><strong>Notes:</strong> ${notes}</p>` : ''}
           </div>
         </div>
       </div>
@@ -69,7 +84,7 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   };
 }
 
-/* ================= OWNER EMAIL (NEW STYLE WITH EMOJIS) ================= */
+/* ================= OWNER EMAIL ================= */
 function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes, collectionSlot }) {
   const itemRows = items.map(i => `
     <tr>
@@ -111,7 +126,6 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
               </tr>
             </table>
           </div>
-
         </div>
       </div>
     `,
