@@ -21,7 +21,7 @@ async function buffer(readable) {
   return Buffer.concat(chunks);
 }
 
-function buildCustomerEmail({ orderId, name, items, total, orderType, address, notes }) {
+function buildCustomerEmail({ orderId, name, items, total, orderType, address, notes, collectionSlot }) {
   const itemRows = items
     .map(i => `
       <tr>
@@ -32,7 +32,7 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
 
   const deliveryLine = orderType === 'delivery'
     ? `<p style="margin:4px 0;color:#555;"><strong>Delivery to:</strong> ${address}</p>`
-    : `<p style="margin:4px 0;color:#555;"><strong>Collection</strong> — Tuesday pickup</p>`;
+    : `<p style="margin:4px 0;color:#555;"><strong>Collection slot:</strong> ${collectionSlot || 'Tuesday pickup'}</p>`;
 
   const notesLine = notes
     ? `<p style="margin:4px 0;color:#555;"><strong>Notes:</strong> ${notes}</p>`
@@ -79,7 +79,7 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   };
 }
 
-function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes }) {
+function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes, collectionSlot }) {
   const itemRows = items
     .map(i => `
       <tr>
@@ -87,6 +87,10 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
         <td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;">£${(i.price * i.quantity).toFixed(2)}</td>
       </tr>`)
     .join('');
+
+  const typeDisplay = orderType === 'delivery'
+    ? `<p style="margin:4px 0;color:#333;"><strong>Deliver to:</strong> ${address}</p>`
+    : `<p style="margin:4px 0;color:#333;"><strong>Type:</strong> Collection — ${collectionSlot || 'Tuesday'}</p>`;
 
   return {
     subject: `🛍️ New order ${orderId} — £${total.toFixed(2)} (${orderType})`,
@@ -100,16 +104,14 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
             <div style="background:#eaf4e8;border-radius:10px;padding:14px 18px;margin-bottom:24px;text-align:center;">
               <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7a8f77;">Order ID</p>
               <p style="margin:4px 0 0;font-size:22px;font-weight:700;color:#2d6b27;font-family:monospace;">${orderId}</p>
-              <p style="margin:6px 0 0;font-size:15px;font-weight:600;color:#1a1a1a;">£${total.toFixed(2)} · ${orderType === 'delivery' ? 'Delivery' : 'Collection'}</p>
+              <p style="margin:6px 0 0;font-size:15px;font-weight:600;color:#1a1a1a;">£${total.toFixed(2)} · ${orderType === 'delivery' ? 'Delivery' : `Collection — ${collectionSlot || 'Tuesday'}`}</p>
             </div>
             <h3 style="color:#1a2418;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Customer</h3>
             <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
               <p style="margin:4px 0;color:#333;"><strong>Name:</strong> ${name}</p>
               <p style="margin:4px 0;color:#333;"><strong>Email:</strong> ${email}</p>
               <p style="margin:4px 0;color:#333;"><strong>Phone:</strong> ${phone || '—'}</p>
-              ${orderType === 'delivery'
-                ? `<p style="margin:4px 0;color:#333;"><strong>Deliver to:</strong> ${address}</p>`
-                : `<p style="margin:4px 0;color:#333;"><strong>Type:</strong> Collection (Tuesday)</p>`}
+              ${typeDisplay}
               ${notes ? `<p style="margin:4px 0;color:#333;"><strong>Notes:</strong> ${notes}</p>` : ''}
             </div>
             <h3 style="color:#1a2418;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Items</h3>
@@ -163,22 +165,24 @@ export default async function handler(req, res) {
       console.error('[webhook] Failed to parse itemsJson:', e);
     }
 
-    const amountPaid = session.amount_total / 100;
+    const amountPaid      = session.amount_total / 100;
+    const collectionSlot  = meta.collectionSlot || null;
 
     // 1. Write to Google Sheets
     try {
       await appendOrder({
-        orderId:  meta.orderId,
-        status:   'paid ✅',
-        type:     meta.orderType,
-        name:     meta.customerName,
-        email:    session.customer_email,
-        phone:    meta.customerPhone,
-        table:    meta.table,
-        address:  meta.address,
+        orderId:        meta.orderId,
+        status:         'paid ✅',
+        type:           meta.orderType,
+        name:           meta.customerName,
+        email:          session.customer_email,
+        phone:          meta.customerPhone,
+        table:          meta.table,
+        address:        meta.address,
         items,
-        total:    amountPaid,
-        notes:    meta.notes,
+        total:          amountPaid,
+        notes:          meta.notes,
+        collectionSlot,
       });
     } catch (e) {
       console.error('[webhook] Sheet error:', e);
@@ -187,13 +191,14 @@ export default async function handler(req, res) {
     // 2. Email the customer
     try {
       const { subject, html } = buildCustomerEmail({
-        orderId:   meta.orderId,
-        name:      meta.customerName,
+        orderId:        meta.orderId,
+        name:           meta.customerName,
         items,
-        total:     amountPaid,
-        orderType: meta.orderType,
-        address:   meta.address,
-        notes:     meta.notes,
+        total:          amountPaid,
+        orderType:      meta.orderType,
+        address:        meta.address,
+        notes:          meta.notes,
+        collectionSlot,
       });
       await resend.emails.send({
         from:    `Root + Fuel <${FROM_CONFIRM}>`,
@@ -208,15 +213,16 @@ export default async function handler(req, res) {
     // 3. Notify owner + dev
     try {
       const { subject, html } = buildOwnerEmail({
-        orderId:   meta.orderId,
-        name:      meta.customerName,
-        email:     session.customer_email,
-        phone:     meta.customerPhone,
+        orderId:        meta.orderId,
+        name:           meta.customerName,
+        email:          session.customer_email,
+        phone:          meta.customerPhone,
         items,
-        total:     amountPaid,
-        orderType: meta.orderType,
-        address:   meta.address,
-        notes:     meta.notes,
+        total:          amountPaid,
+        orderType:      meta.orderType,
+        address:        meta.address,
+        notes:          meta.notes,
+        collectionSlot,
       });
       await resend.emails.send({
         from:    `Root + Fuel Orders <${FROM_ORDERS}>`,
