@@ -69,7 +69,7 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   };
 }
 
-/* ================= OWNER EMAIL (NEW STYLE) ================= */
+/* ================= OWNER EMAIL (NEW STYLE WITH EMOJIS) ================= */
 function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes, collectionSlot }) {
   const itemRows = items.map(i => `
     <tr>
@@ -79,7 +79,7 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
   `).join('');
 
   return {
-    subject: `New order ${orderId} — £${total.toFixed(2)} (${orderType})`,
+    subject: `🛍️ New order ${orderId} — £${total.toFixed(2)} (${orderType})`,
     html: `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color:#f5f1ea; padding:40px 10px;">
         <div style="max-width:500px; margin:auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -90,23 +90,23 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
 
           <div style="padding:30px;">
             <div style="background:#eef5ee; border-radius:12px; padding:20px; text-align:center; margin-bottom:25px;">
-               <span style="color:#316431; font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">New Order Received</span>
-               <h2 style="margin:10px 0; color:#111; font-size:22px;">${orderId}</h2>
+               <h2 style="margin:0; color:#316431; font-size:20px;">🛍️ New Order Received</h2>
+               <p style="margin:10px 0 5px; color:#111; font-size:18px; font-weight:bold;">${orderId}</p>
                <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()} — ${collectionSlot || '13:00'}</p>
             </div>
 
             <h4 style="margin:0 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Customer Details</h4>
             <p style="margin:5px 0; font-size:14px;"><strong>Name:</strong> ${name}</p>
-            <p style="margin:5px 0; font-size:14px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#316431;">${email}</a></p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#316431; text-decoration:none;">${email}</a></p>
             <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone}</p>
             ${orderType === 'delivery' ? `<p style="margin:5px 0; font-size:14px;"><strong>Address:</strong> ${address}</p>` : ''}
-            ${notes ? `<p style="margin:10px 0; font-size:14px; background:#fff9e6; padding:10px; border-radius:8px; border-left:4px solid #f3b131;"><strong>Notes:</strong> ${notes}</p>` : ''}
+            ${notes ? `<p style="margin:10px 0; font-size:14px; background:#fff9e6; padding:15px; border-radius:8px; border-left:4px solid #f3b131;"><strong>Notes:</strong> ${notes}</p>` : ''}
 
-            <h4 style="margin:25px 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Items</h4>
+            <h4 style="margin:25px 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Items Ordered</h4>
             <table style="width:100%; border-collapse:collapse;">
               ${itemRows}
               <tr>
-                <td style="padding:15px 0; font-weight:bold; font-size:16px;">Total</td>
+                <td style="padding:15px 0; font-weight:bold; font-size:16px;">Total Amount</td>
                 <td style="padding:15px 0; text-align:right; font-weight:bold; font-size:16px; color:#316431;">£${total.toFixed(2)}</td>
               </tr>
             </table>
