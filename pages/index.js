@@ -182,22 +182,6 @@ export default function Home() {
           Place your order by Saturday midnight for Tuesday pickup or delivery.
         </div>
 
-        {/* Welcome / what we do banner */}
-        <div style={{
-          background: WHITE,
-          borderBottom: '1px solid rgba(0,0,0,0.07)',
-          padding: '11px 28px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '24px',
-          flexWrap: 'wrap',
-        }}>
-          <span style={{ fontSize: '20px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>MEAL PREP</span>
-          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
-          <span style={{ fontSize: '20px', fontWeight: 700, color: '#1a2418', letterSpacing: '0.3px' }}>CATERING</span>
-          <span style={{ color: 'rgba(0,0,0,0.15)' }}>·</span>
-        </div>
 
         {/* Header */}
         <header className={styles.header}>
@@ -302,7 +286,8 @@ export default function Home() {
                 <span className={styles.heroTitleAccent}>performance</span>
               </h1>
               <p className={styles.heroSub}>
-                Performance nutrition rooted in nature. Fresh, whole food crafted for those who demand more from what they eat.
+                Meal prep and catering services. Performance nutrition, rooted in nature.
+                Locally sourced, whole food focussed, created for those who demand more from what they eat  
               </p>
 
               {/* Countdown Timer */}
