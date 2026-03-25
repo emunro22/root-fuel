@@ -21,9 +21,7 @@ async function buffer(readable) {
   return Buffer.concat(chunks);
 }
 
-/* =========================
-   CUSTOMER EMAIL (FULL DESIGN)
-========================= */
+/* ================= CUSTOMER EMAIL ================= */
 function buildCustomerEmail({ orderId, name, items, total, orderType, address, notes, collectionSlot }) {
   const itemRows = items.map(i => `
     <tr>
@@ -33,80 +31,38 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   `).join('');
 
   const deliveryLine = orderType === 'delivery'
-    ? `<p style="margin:4px 0;color:#555;"><strong>Delivery to:</strong> ${address}</p>`
-    : `<p style="margin:4px 0;color:#555;"><strong>Collection slot:</strong> ${collectionSlot || 'Tuesday pickup'}</p>`;
-
-  const collectionInfo = orderType !== 'delivery' ? `
-    <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;margin:16px 0;">
-      <p style="margin:0 0 10px;color:#333;font-size:14px;line-height:1.6;">
-        We ask that you arrive on time but appreciate delays can happen — just send a DM on Instagram so we know whether to put your order back in the fridge.
-      </p>
-
-      <p style="margin:0 0 12px;color:#b07800;font-size:14px;font-weight:bold;background:#fff8e1;padding:10px 14px;border-radius:6px;">
-        Please do not arrive before your slot — food is made to order and will not be bagged.
-      </p>
-
-      <div style="background:#ffffff;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
-        <p style="margin:0 0 6px;font-size:12px;color:#888;text-transform:uppercase;">Address</p>
-        <p style="margin:0;color:#2d6b27;font-weight:600;line-height:1.6;">
-          All Tots Nursery<br>
-          64 Cowdenhill Road<br>
-          G13 2HE
-        </p>
-      </div>
-
-      <p style="margin:0 0 10px;color:#333;font-size:14px;line-height:1.6;">
-        We have a small carpark — message the page to confirm your arrival and we will bring your food to you.
-      </p>
-
-      <p style="margin:0;color:#b07800;font-size:14px;font-weight:bold;background:#fff8e1;padding:10px 14px;border-radius:6px;">
-        Please do not ring the bell as it belongs to the nursery next door and we will not hear it.
-      </p>
-    </div>
-  ` : '';
-
-  const notesLine = notes
-    ? `<p style="margin:4px 0;color:#555;"><strong>Notes:</strong> ${notes}</p>`
-    : '';
+    ? `<p><strong>Delivery:</strong> ${address}</p>`
+    : `<p><strong>Collection:</strong> ${collectionSlot || 'Tuesday pickup'}</p>`;
 
   return {
     subject: `Your Root + Fuel order is confirmed! (${orderId})`,
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f5f1ea;padding:32px 16px;">
-        <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-          <div style="background:#2d6b27;padding:32px;text-align:center;">
-            <h1 style="color:#fff;margin:0;">Root + Fuel</h1>
-          </div>
+      <div style="font-family:Arial;padding:20px;background:#f5f1ea;">
+        <div style="max-width:500px;margin:auto;background:#fff;border-radius:12px;padding:20px;">
+          <h2>Order Confirmed ✅</h2>
+          <p>Hi ${name}, thanks for your order.</p>
 
-          <div style="padding:32px;">
-            <h2>Order Confirmed ✅</h2>
-            <p>Hi ${name}, thanks for your order!</p>
+          <h3>${orderId}</h3>
 
-            <p><strong>Order ID:</strong> ${orderId}</p>
+          <table style="width:100%;">
+            ${itemRows}
+            <tr>
+              <td><strong>Total</strong></td>
+              <td style="text-align:right;"><strong>£${total.toFixed(2)}</strong></td>
+            </tr>
+          </table>
 
-            <table style="width:100%;margin:16px 0;">
-              ${itemRows}
-              <tr>
-                <td><strong>Total</strong></td>
-                <td style="text-align:right;"><strong>£${total.toFixed(2)}</strong></td>
-              </tr>
-            </table>
+          ${deliveryLine}
+          ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
 
-            ${deliveryLine}
-            ${notesLine}
-            ${collectionInfo}
-
-            <p>Orders are prepared every Tuesday.</p>
-          </div>
+          <p style="margin-top:20px;">Pickup is every Tuesday.</p>
         </div>
       </div>
     `,
   };
 }
 
-/* =========================
-   OWNER EMAIL (FULL DESIGN)
-========================= */
+/* ================= OWNER EMAIL (OLD STYLE) ================= */
 function buildOwnerEmail({
   orderId,
   name,
@@ -126,52 +82,57 @@ function buildOwnerEmail({
     </tr>
   `).join('');
 
-  const deliveryLine = orderType === 'delivery'
-    ? `<p><strong>Delivery:</strong> ${address}</p>`
-    : `<p><strong>Collection slot:</strong> ${collectionSlot || 'Not set'}</p>`;
-
-  const notesLine = notes ? `<p><strong>Notes:</strong> ${notes}</p>` : '';
-
   return {
-    subject: `🚨 New Order Received (${orderId})`,
+    subject: `New order ${orderId} — £${total.toFixed(2)} (${orderType})`,
     html: `
-      <div style="font-family:Arial;padding:20px;">
-        <h2>New Order 🚀</h2>
+      <div style="font-family:Arial;background:#f4f4f4;padding:20px;">
+        <div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;">
 
-        <p><strong>Order ID:</strong> ${orderId}</p>
+          <div style="background:#111;color:#fff;padding:16px;text-align:center;">
+            <h2 style="margin:0;">🛍️ New Order Received</h2>
+          </div>
 
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
+          <div style="padding:20px;">
 
-        ${deliveryLine}
-        ${notesLine}
+            <div style="background:#e6efe6;padding:16px;border-radius:10px;text-align:center;">
+              <p style="margin:0;font-size:12px;">ORDER ID</p>
+              <h3 style="margin:5px 0;">${orderId}</h3>
+              <p style="margin:0;">£${total.toFixed(2)} • ${orderType} — ${collectionSlot || ''}</p>
+            </div>
 
-        <table style="width:100%;margin-top:10px;">
-          ${itemRows}
-          <tr>
-            <td><strong>Total</strong></td>
-            <td style="text-align:right;"><strong>£${total.toFixed(2)}</strong></td>
-          </tr>
-        </table>
+            <h4 style="margin-top:20px;">Customer</h4>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone}</p>
+            <p><strong>Type:</strong> ${orderType}</p>
+            ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+
+            <h4 style="margin-top:20px;">Items</h4>
+            <table style="width:100%;">
+              ${itemRows}
+              <tr>
+                <td><strong>Total</strong></td>
+                <td style="text-align:right;"><strong>£${total.toFixed(2)}</strong></td>
+              </tr>
+            </table>
+
+          </div>
+        </div>
       </div>
     `,
   };
 }
 
-/* =========================
-   HANDLER
-========================= */
+/* ================= HANDLER ================= */
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const buf = await buffer(req);
 
   let event;
   try {
-    event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
+    event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
@@ -185,14 +146,15 @@ export default async function handler(req, res) {
     const session = event.data.object;
     const meta = session.metadata;
 
-    let items = [];
-    try {
-      const slim = JSON.parse(meta.itemsJson || '[]');
-      items = slim.map(i => ({ name: i.n, price: i.p, quantity: i.q }));
-    } catch {}
+    const items = JSON.parse(meta.itemsJson || '[]').map(i => ({
+      name: i.n,
+      price: i.p,
+      quantity: i.q
+    }));
 
-    const amountPaid = session.amount_total / 100;
+    const total = session.amount_total / 100;
 
+    /* Save */
     await appendOrder({
       orderId: meta.orderId,
       status: 'paid',
@@ -202,17 +164,17 @@ export default async function handler(req, res) {
       phone: meta.customerPhone,
       address: meta.address,
       items,
-      total: amountPaid,
+      total,
       notes: meta.notes,
-      collectionSlot: meta.collectionSlot || null,
+      collectionSlot: meta.collectionSlot,
     });
 
-    // CUSTOMER EMAIL
-    const customerEmail = buildCustomerEmail({
+    /* Customer email */
+    const customer = buildCustomerEmail({
       orderId: meta.orderId,
       name: meta.customerName,
       items,
-      total: amountPaid,
+      total,
       orderType: meta.orderType,
       address: meta.address,
       notes: meta.notes,
@@ -222,17 +184,17 @@ export default async function handler(req, res) {
     await resend.emails.send({
       from: `Root + Fuel <${FROM_CONFIRM}>`,
       to: session.customer_email,
-      ...customerEmail,
+      ...customer,
     });
 
-    // OWNER EMAIL
-    const ownerEmail = buildOwnerEmail({
+    /* Owner email */
+    const owner = buildOwnerEmail({
       orderId: meta.orderId,
       name: meta.customerName,
       email: session.customer_email,
       phone: meta.customerPhone,
       items,
-      total: amountPaid,
+      total,
       orderType: meta.orderType,
       address: meta.address,
       notes: meta.notes,
@@ -242,7 +204,7 @@ export default async function handler(req, res) {
     await resend.emails.send({
       from: `Root + Fuel Orders <${FROM_ORDERS}>`,
       to: [OWNER_EMAIL, DEV_EMAIL],
-      ...ownerEmail,
+      ...owner,
     });
   }
 
