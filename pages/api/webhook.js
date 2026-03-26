@@ -107,7 +107,7 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
             <div style="background:#eef5ee; border-radius:12px; padding:20px; text-align:center; margin-bottom:25px;">
                <h2 style="margin:0; color:#316431; font-size:20px;">🛍️ New Order Received</h2>
                <p style="margin:10px 0 5px; color:#111; font-size:18px; font-weight:bold;">${orderId}</p>
-               <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()} — ${collectionSlot || '13:00'}</p>
+               <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()}${orderType === 'pickup' ? ` — ${collectionSlot || '13:00'}` : ''}</p>
             </div>
 
             <h4 style="margin:0 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Customer Details</h4>
