@@ -145,10 +145,10 @@ export default async function handler(req, res) {
     const session = event.data.object;
     const meta    = session.metadata;
 
-    // Safely reconstruct itemsJson from two chunks — fixes silent crash on large orders
     let items = [];
     try {
-      const rawJson = (meta.itemsJson || '') + (meta.itemsJson2 || '');
+      const rawJson = (meta.itemsJson || '') + (meta.itemsJson2 || '') + (meta.itemsJson3 || '');
+      console.log(`[webhook] rawJson length: ${rawJson.length} chars`);
       items = JSON.parse(rawJson).map(i => ({
         name:     i.n,
         price:    i.p,
@@ -158,6 +158,7 @@ export default async function handler(req, res) {
       console.error('[webhook] Failed to parse itemsJson:', e.message);
       console.error('[webhook] chunk1:', meta.itemsJson);
       console.error('[webhook] chunk2:', meta.itemsJson2);
+      console.error('[webhook] chunk3:', meta.itemsJson3);
     }
 
     const total = session.amount_total / 100;

@@ -42,11 +42,14 @@ export default async function handler(req, res) {
   const total      = itemsTotal + fee;
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  // Slim item names to 30 chars to stay well within Stripe's 500-char metadata limit
   const slimItems   = items.map(i => ({ n: i.name.slice(0, 30), p: i.price, q: i.quantity }));
   const itemsJson   = JSON.stringify(slimItems);
-  const itemsChunk1 = itemsJson.slice(0, 490);
-  const itemsChunk2 = itemsJson.slice(490, 980); // empty string if order is small
+
+  console.log(`[checkout] itemsJson length: ${itemsJson.length} chars`);
+
+  const itemsChunk1 = itemsJson.slice(0,    490);
+  const itemsChunk2 = itemsJson.slice(490,  980);
+  const itemsChunk3 = itemsJson.slice(980, 1470);
 
   const lineItems = items.map(item => ({
     price_data: {
@@ -84,6 +87,7 @@ export default async function handler(req, res) {
         notes:          (notes          || '').slice(0, 200),
         itemsJson:      itemsChunk1,
         itemsJson2:     itemsChunk2,
+        itemsJson3:     itemsChunk3,
         total:          total.toFixed(2),
         deliveryFee:    fee.toFixed(2),
         collectionSlot: (collectionSlot || '').slice(0, 20),
