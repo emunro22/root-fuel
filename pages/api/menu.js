@@ -5,8 +5,8 @@ export default async function handler(req, res) {
     res.status(405).end();
     return;
   }
-
   try {
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     const items = await getMenuItems();
     res.status(200).json(items);
   } catch (err) {

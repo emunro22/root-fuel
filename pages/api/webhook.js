@@ -142,8 +142,8 @@ export default async function handler(req, res) {
   processedEvents.add(event.id);
 
   if (event.type === 'checkout.session.completed') {
-    const session  = event.data.object;
-    const orderId  = session.metadata?.orderId;
+    const session = event.data.object;
+    const orderId = session.metadata?.orderId;
 
     if (!orderId) {
       console.error('[webhook] No orderId in metadata');
