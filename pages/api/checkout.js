@@ -1,5 +1,7 @@
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
+import { appendOrder } from '../../lib/sheets';
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 function isOrderingLocked() {
@@ -22,7 +24,6 @@ function isOrderingLocked() {
 }
 
 export default async function handler(req, res) {
-  console.log('Stripe key:', process.env.STRIPE_SECRET_KEY?.slice(0, 14));
   if (req.method !== 'POST') return res.status(405).end();
   if (isOrderingLocked()) {
     return res.status(403).json({
@@ -42,14 +43,28 @@ export default async function handler(req, res) {
   const total      = itemsTotal + fee;
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  const slimItems   = items.map(i => ({ n: i.name.slice(0, 30), p: i.price, q: i.quantity }));
-  const itemsJson   = JSON.stringify(slimItems);
-
-  console.log(`[checkout] itemsJson length: ${itemsJson.length} chars`);
-
-  const itemsChunk1 = itemsJson.slice(0,    490);
-  const itemsChunk2 = itemsJson.slice(490,  980);
-  const itemsChunk3 = itemsJson.slice(980, 1470);
+  // Save order to Sheets immediately as pending_payment
+  // Webhook only needs orderId — no metadata size limit ever again
+  try {
+    await appendOrder({
+      orderId,
+      status:         'pending_payment',
+      type:           orderType,
+      name:           customer.name,
+      email:          customer.email,
+      phone:          customer.phone || '',
+      table:          table || '',
+      address:        address || '',
+      items,
+      total,
+      deliveryFee:    fee,
+      notes:          notes || '',
+      collectionSlot: collectionSlot || '',
+    });
+  } catch (e) {
+    console.error('[checkout] Failed to write pending order to Sheets:', e.message);
+    // Don't block checkout — Stripe webhook will still fire
+  }
 
   const lineItems = items.map(item => ({
     price_data: {
@@ -78,19 +93,7 @@ export default async function handler(req, res) {
       mode: 'payment',
       customer_email: customer.email,
       metadata: {
-        orderId,
-        customerName:   customer.name.slice(0, 100),
-        customerPhone:  (customer.phone  || '').slice(0, 20),
-        orderType,
-        table:          (table          || '').slice(0, 50),
-        address:        (address        || '').slice(0, 200),
-        notes:          (notes          || '').slice(0, 200),
-        itemsJson:      itemsChunk1,
-        itemsJson2:     itemsChunk2,
-        itemsJson3:     itemsChunk3,
-        total:          total.toFixed(2),
-        deliveryFee:    fee.toFixed(2),
-        collectionSlot: (collectionSlot || '').slice(0, 20),
+        orderId, // only this needed — everything else is already in Sheets
       },
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url:  `${appUrl}/?cancelled=true`,
@@ -105,7 +108,7 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create(sessionParams);
     res.status(200).json({ sessionId: session.id, url: session.url });
   } catch (err) {
-    console.error('Checkout error:', err.message);
+    console.error('[checkout] Stripe error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }
