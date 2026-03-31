@@ -1,16 +1,9 @@
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-/**
- * Server-side ordering schedule (Europe/London time):
- *   Wed 00:00 → Sat 23:59:59  — OPEN
- *   Sun 00:00 → Tue 23:59:59  — LOCKED
- */
 function isOrderingLocked() {
   const now = new Date();
-
   const ukParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
     weekday: 'short',
@@ -19,22 +12,18 @@ function isOrderingLocked() {
     second: 'numeric',
     hour12: false,
   }).formatToParts(now);
-
   const day  = ukParts.find(p => p.type === 'weekday')?.value;
   const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
   const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
-
   if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
   if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
-
   return false;
 }
 
 export default async function handler(req, res) {
   console.log('Stripe key:', process.env.STRIPE_SECRET_KEY?.slice(0, 14));
   if (req.method !== 'POST') return res.status(405).end();
-
   if (isOrderingLocked()) {
     return res.status(403).json({
       error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
@@ -47,14 +36,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const orderId = `ORD-${uuidv4().slice(0, 6).toUpperCase()}`;
+  const orderId    = `ORD-${uuidv4().slice(0, 6).toUpperCase()}`;
   const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const fee = orderType === 'delivery' ? (deliveryFee || 2.99) : 0;
-  const total = itemsTotal + fee;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const fee        = orderType === 'delivery' ? (deliveryFee || 2.99) : 0;
+  const total      = itemsTotal + fee;
+  const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  const slimItems = items.map(i => ({ n: i.name, p: i.price, q: i.quantity }));
-  const itemsJson = JSON.stringify(slimItems);
+  // Slim item names to 30 chars to stay well within Stripe's 500-char metadata limit
+  const slimItems   = items.map(i => ({ n: i.name.slice(0, 30), p: i.price, q: i.quantity }));
+  const itemsJson   = JSON.stringify(slimItems);
+  const itemsChunk1 = itemsJson.slice(0, 490);
+  const itemsChunk2 = itemsJson.slice(490, 980); // empty string if order is small
 
   const lineItems = items.map(item => ({
     price_data: {
@@ -90,7 +82,8 @@ export default async function handler(req, res) {
         table:          (table          || '').slice(0, 50),
         address:        (address        || '').slice(0, 200),
         notes:          (notes          || '').slice(0, 200),
-        itemsJson:      itemsJson.slice(0, 490),
+        itemsJson:      itemsChunk1,
+        itemsJson2:     itemsChunk2,
         total:          total.toFixed(2),
         deliveryFee:    fee.toFixed(2),
         collectionSlot: (collectionSlot || '').slice(0, 20),
@@ -107,7 +100,6 @@ export default async function handler(req, res) {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
     res.status(200).json({ sessionId: session.id, url: session.url });
-
   } catch (err) {
     console.error('Checkout error:', err.message);
     res.status(500).json({ error: err.message });
