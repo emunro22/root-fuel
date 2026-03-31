@@ -1,97 +1,114 @@
-import { Resend } from 'resend';
-import { appendCateringEnquiry } from '../../lib/sheets';
+import Stripe from 'stripe';
+import { v4 as uuidv4 } from 'uuid';
+import { appendOrder } from '../../lib/sheets';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-const FROM_ORDERS  = 'orders@rootandfuelltd.com';
-const OWNER_EMAIL  = 'samanthahamilton@rootandfuelltd.com';
-const DEV_EMAIL    = 'euanmunroo@gmail.com';
+function isOrderingLocked() {
+  const now = new Date();
+  const ukParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  }).formatToParts(now);
+  const day  = ukParts.find(p => p.type === 'weekday')?.value;
+  const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
+  const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
+  const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
+  if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
+  if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
+  return false;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-
-  const { name, email, phone, eventDate, guestCount, message } = req.body;
-
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'Missing required fields.' });
+  if (isOrderingLocked()) {
+    return res.status(403).json({
+      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
+    });
   }
 
-  // 1. Log to Google Sheets ── NEW
-  try {
-    await appendCateringEnquiry({ name, email, phone, eventDate, guestCount, message });
-  } catch (e) {
-    console.error('Catering sheet error:', e);
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot } = req.body;
+
+  if (!items?.length || !customer?.email || !customer?.name) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  // 2. Notify owner + dev
+  const orderId    = `ORD-${uuidv4().slice(0, 6).toUpperCase()}`;
+  const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const fee        = orderType === 'delivery' ? (deliveryFee || 2.99) : 0;
+  const total      = itemsTotal + fee;
+  const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  // Save order to Sheets immediately as pending_payment
+  // Webhook will update status to paid — no item data needed in Stripe metadata at all
   try {
-    await resend.emails.send({
-      from:    `Root + Fuel Orders <${FROM_ORDERS}>`,
-      to:      [OWNER_EMAIL, DEV_EMAIL],
-      subject: `🍽️ New Catering Enquiry from ${name}`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f5f5f5;padding:32px 16px;">
-          <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-            <div style="background:#1a1a1a;padding:24px 32px;text-align:center;">
-              <h1 style="color:#fff;font-size:20px;margin:0;">🍽️ New Catering Enquiry</h1>
-            </div>
-            <div style="padding:32px;">
-              <div style="background:#eaf4e8;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
-                <p style="margin:4px 0;color:#333;"><strong>Name:</strong> ${name}</p>
-                <p style="margin:4px 0;color:#333;"><strong>Email:</strong> ${email}</p>
-                <p style="margin:4px 0;color:#333;"><strong>Phone:</strong> ${phone || '—'}</p>
-                <p style="margin:4px 0;color:#333;"><strong>Event Date:</strong> ${eventDate || '—'}</p>
-                <p style="margin:4px 0;color:#333;"><strong>Guest Count:</strong> ${guestCount || '—'}</p>
-              </div>
-              <h3 style="color:#1a2418;margin:0 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Message</h3>
-              <div style="background:#f9f7f4;border-radius:10px;padding:16px 18px;">
-                <p style="margin:0;color:#555;line-height:1.7;">${message.replace(/\n/g, '<br/>')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      `,
+    await appendOrder({
+      orderId,
+      status:         'pending_payment',
+      type:           orderType,
+      name:           customer.name,
+      email:          customer.email,
+      phone:          customer.phone || '',
+      table:          table || '',
+      address:        address || '',
+      items,
+      total,
+      deliveryFee:    fee,
+      notes:          notes || '',
+      collectionSlot: collectionSlot || '',
     });
   } catch (e) {
-    console.error('Owner catering email error:', e);
-    return res.status(500).json({ error: 'Failed to send enquiry.' });
+    console.error('[checkout] Failed to write pending order to Sheets:', e.message);
+    // Don't block checkout — Stripe webhook will still fire
   }
 
-  // 3. Auto-reply to customer
-  try {
-    await resend.emails.send({
-      from:    `Root + Fuel <order-confirmation@rootandfuelltd.com>`,
-      to:      email,
-      subject: `We've received your catering enquiry, ${name}!`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f5f1ea;padding:32px 16px;">
-          <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-            <div style="background:#2d6b27;padding:32px 32px 24px;text-align:center;">
-              <h1 style="color:#fff;font-size:26px;margin:0;font-weight:600;">Root + Fuel</h1>
-              <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:15px;">Performance nutrition, rooted in nature</p>
-            </div>
-            <div style="padding:32px;">
-              <h2 style="color:#1a2418;font-size:22px;margin:0 0 8px;">Thanks for your enquiry! 🍽️</h2>
-              <p style="color:#555;margin:0 0 20px;line-height:1.7;">
-                Hi ${name}, we've received your catering enquiry and will be in touch shortly to discuss your event.
-              </p>
-              <div style="background:#eaf4e8;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
-                <p style="margin:0;color:#2d6b27;font-size:14px;line-height:1.7;">
-                  In the meantime, feel free to reply to this email with any additional details about your event.
-                </p>
-              </div>
-              <p style="color:#aaa;font-size:13px;margin:0;">— The Root + Fuel Team</p>
-            </div>
-            <div style="background:#1a1a1a;padding:20px 32px;text-align:center;">
-              <p style="color:#666;font-size:12px;margin:0;">© ${new Date().getFullYear()} Root + Fuel Ltd · Glasgow · Whole Food · Locally Sourced</p>
-            </div>
-          </div>
-        </div>
-      `,
+  const lineItems = items.map(item => ({
+    price_data: {
+      currency: 'gbp',
+      product_data: { name: item.name },
+      unit_amount: Math.round(item.price * 100),
+    },
+    quantity: item.quantity,
+  }));
+
+  if (orderType === 'delivery' && fee > 0) {
+    lineItems.push({
+      price_data: {
+        currency: 'gbp',
+        product_data: { name: 'Delivery Fee' },
+        unit_amount: Math.round(fee * 100),
+      },
+      quantity: 1,
     });
-  } catch (e) {
-    console.error('Customer catering auto-reply error:', e);
   }
 
-  return res.status(200).json({ ok: true });
+  try {
+    const sessionParams = {
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      customer_email: customer.email,
+      metadata: {
+        orderId, // only thing we need — everything else is in Sheets
+      },
+      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+      cancel_url:  `${appUrl}/?cancelled=true`,
+    };
+
+    if (promotionCodeId) {
+      sessionParams.discounts = [{ promotion_code: promotionCodeId }];
+    } else {
+      sessionParams.allow_promotion_codes = true;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.status(200).json({ sessionId: session.id, url: session.url });
+  } catch (err) {
+    console.error('[checkout] Stripe error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 }

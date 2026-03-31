@@ -13,6 +13,7 @@ const CATEGORIES = [
   { name: 'Overnight Oats', icon: '' },
   { name: 'Poke Bowls',     icon: '' },
   { name: 'Grab & Go',      icon: '' },
+  { name: 'Specials',      icon: '' },
 ];
 
 const CREAM = '#f5f1ea';

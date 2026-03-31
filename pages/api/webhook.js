@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { appendOrder } from '../../lib/sheets';
+import { getOrderById, updateOrderStatus } from '../../lib/sheets';
 import { Resend } from 'resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -142,61 +142,51 @@ export default async function handler(req, res) {
   processedEvents.add(event.id);
 
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const meta    = session.metadata;
+    const session  = event.data.object;
+    const orderId  = session.metadata?.orderId;
 
-    let items = [];
+    if (!orderId) {
+      console.error('[webhook] No orderId in metadata');
+      return res.json({ received: true });
+    }
+
+    // Fetch full order from Sheets — no metadata size limit ever again
+    let order;
     try {
-      const rawJson = (meta.itemsJson || '') + (meta.itemsJson2 || '') + (meta.itemsJson3 || '');
-      console.log(`[webhook] rawJson length: ${rawJson.length} chars`);
-      items = JSON.parse(rawJson).map(i => ({
-        name:     i.n,
-        price:    i.p,
-        quantity: i.q,
-      }));
+      order = await getOrderById(orderId);
     } catch (e) {
-      console.error('[webhook] Failed to parse itemsJson:', e.message);
-      console.error('[webhook] chunk1:', meta.itemsJson);
-      console.error('[webhook] chunk2:', meta.itemsJson2);
-      console.error('[webhook] chunk3:', meta.itemsJson3);
+      console.error('[webhook] Failed to fetch order from Sheets:', e.message);
+    }
+
+    if (!order) {
+      console.error(`[webhook] Order ${orderId} not found in Sheets`);
+      return res.json({ received: true });
+    }
+
+    // Update status to paid
+    try {
+      await updateOrderStatus(orderId, 'paid');
+    } catch (e) {
+      console.error('[webhook] Failed to update order status:', e.message);
     }
 
     const total = session.amount_total / 100;
 
-    /* Save to Google Sheets */
-    try {
-      await appendOrder({
-        orderId:        meta.orderId,
-        status:         'paid',
-        type:           meta.orderType,
-        name:           meta.customerName,
-        email:          session.customer_email,
-        phone:          meta.customerPhone,
-        address:        meta.address,
-        items,
-        total,
-        notes:          meta.notes,
-        collectionSlot: meta.collectionSlot,
-      });
-    } catch (e) {
-      console.error('[webhook] Sheets error:', e.message);
-    }
-
     /* Send Customer email */
     try {
       const customer = buildCustomerEmail({
-        orderId:        meta.orderId,
-        name:           meta.customerName,
-        items,
+        orderId,
+        name:           order.name,
+        items:          order.items,
         total,
-        orderType:      meta.orderType,
-        address:        meta.address,
-        notes:          meta.notes,
-        collectionSlot: meta.collectionSlot,
+        orderType:      order.orderType,
+        address:        order.address,
+        notes:          order.notes,
+        collectionSlot: order.collectionSlot,
       });
       await resend.emails.send({
         from: `Root + Fuel <${FROM_CONFIRM}>`,
-        to:   session.customer_email,
+        to:   order.email,
         ...customer,
       });
     } catch (e) {
@@ -206,16 +196,16 @@ export default async function handler(req, res) {
     /* Send Owner/Dev email */
     try {
       const owner = buildOwnerEmail({
-        orderId:        meta.orderId,
-        name:           meta.customerName,
-        email:          session.customer_email,
-        phone:          meta.customerPhone,
-        items,
+        orderId,
+        name:           order.name,
+        email:          order.email,
+        phone:          order.phone,
+        items:          order.items,
         total,
-        orderType:      meta.orderType,
-        address:        meta.address,
-        notes:          meta.notes,
-        collectionSlot: meta.collectionSlot,
+        orderType:      order.orderType,
+        address:        order.address,
+        notes:          order.notes,
+        collectionSlot: order.collectionSlot,
       });
       await resend.emails.send({
         from: `Root + Fuel Orders <${FROM_ORDERS}>`,
