@@ -11,7 +11,7 @@ const COLLECTION_SLOTS = ['13:00', '16:00', '17:00'];
 // Origin: All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE
 const ORIGIN_LAT = 55.8821;
 const ORIGIN_LNG = -4.3714;
-const MAX_MILES  = 15;
+const MAX_MILES  = 10;
 
 // Distance-based delivery pricing
 // ≤ 3 miles  → £3.00 (local: Knightswood, Drumchapel, Yoker etc.)
