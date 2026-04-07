@@ -27,60 +27,77 @@ const GREEN = '#2d6b27';
  *
  * Cutoff is Saturday midnight. Orders reopen Wednesday morning.
  */
-function getOrderingStatus() {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
-
-  // Locked Sunday (0), Monday (1), Tuesday (2)
-  if (day === 0 || day === 1 || day === 2) return { locked: true, target: null };
-
-  // Build the target: end of this coming Saturday (23:59:59.999)
-  const daysUntilSaturday = (6 - day + 7) % 7; // 0 if today is Saturday
-  const target = new Date(now);
-  target.setDate(now.getDate() + daysUntilSaturday);
-  target.setHours(23, 59, 59, 999);
-
-  // Guard: if we've somehow passed Saturday midnight
-  if (now >= target && day === 6) return { locked: true, target: null };
-
-  return { locked: false, target };
-}
 
 function useCountdown() {
   const [timeLeft, setTimeLeft] = useState(null);
   const [locked, setLocked] = useState(false);
+  const [lockReason, setLockReason] = useState('');
+  const [lockSource, setLockSource] = useState('');
 
   useEffect(() => {
-    const tick = () => {
-      const { locked: isLocked, target } = getOrderingStatus();
+    let intervalId;
 
-      if (isLocked || !target) {
-        setLocked(true);
-        setTimeLeft(null);
-        return;
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/check-lock');
+        const data = await res.json();
+
+        setLocked(data.locked);
+        setLockReason(data.reason || '');
+        setLockSource(data.source || '');
+
+        if (data.locked || !data.deadline) {
+          setTimeLeft(null);
+          return;
+        }
+
+        clearInterval(intervalId);
+
+        const deadline = new Date(data.deadline);
+
+        const tick = () => {
+          const diff = deadline - new Date();
+
+          if (diff <= 0) {
+            fetchStatus();
+            return;
+          }
+
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+          setTimeLeft({ days, hours, minutes, seconds });
+        };
+
+        tick();
+        intervalId = setInterval(tick, 1000);
+
+      } catch {
+        const day = new Date().getDay();
+        const isWeeklyLocked = day === 0 || day === 1 || day === 2;
+
+        setLocked(isWeeklyLocked);
+        setLockReason(
+          isWeeklyLocked
+            ? "Orders are closed while we fulfil this week's batch. Reopens Wednesday."
+            : "Ordering is open until Saturday midnight."
+        );
+        setLockSource(isWeeklyLocked ? 'weekly' : 'open');
       }
+    }
 
-      const diff = target - new Date();
-      if (diff <= 0) {
-        setLocked(true);
-        setTimeLeft(null);
-        return;
-      }
+    fetchStatus();
+    const pollId = setInterval(fetchStatus, 60000);
 
-      setLocked(false);
-      const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimeLeft({ days, hours, minutes, seconds });
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(pollId);
     };
-
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
   }, []);
 
-  return { timeLeft, locked };
+  return { timeLeft, locked, lockReason, lockSource };
 }
 
 export default function Home() {
@@ -94,7 +111,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCatering,   setShowCatering]   = useState(false);
 
-  const { timeLeft, locked } = useCountdown();
+const { timeLeft, locked, lockReason, lockSource } = useCountdown();
 
   // ── Hero food image carousel ──────────────────────────────────────────────
   // Add your food photo filenames to /public/food/ and list them here.
@@ -303,12 +320,11 @@ export default function Home() {
                 {locked ? (
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#b41e1e', marginBottom: '6px' }}>
-                      Orders Closed
+                      {lockSource === 'holiday' ? 'Holiday Closure' : 'Orders Closed'}
                     </div>
                     <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
-                      Ordering is closed while we fulfil this week's batch. Orders reopen Wednesday for next Tuesday's collection or delivery.
-                    </div>
-                  </div>
+                      {lockReason}
+                    </div>                  </div>
                 ) : timeLeft ? (
                   <>
                     <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '12px' }}>
@@ -437,8 +453,7 @@ export default function Home() {
                 fontWeight: 500,
                 fontSize: '15px',
               }}>
-                Orders are currently closed while we fulfil this week's batch. Browse the menu below — ordering reopens Wednesday for next Tuesday.
-              </div>
+                {lockReason || "Orders are currently closed while we fulfil this week's batch."}              </div>
             )}
 
             <div className={styles.sectionHeader}>
