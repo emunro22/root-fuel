@@ -1,6 +1,8 @@
+// pages/api/checkout.js
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { appendOrder } from '../../lib/sheets';
+import { kv } from '@vercel/kv';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -25,6 +27,7 @@ function isOrderingLocked() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+
   if (isOrderingLocked()) {
     return res.status(403).json({
       error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
@@ -37,14 +40,25 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // ── Collection override check ─────────────────────────────────────────────
+  // If Samantha has disabled collection for this week via the admin panel,
+  // block any pickup orders at the server level.
+  if (orderType === 'pickup') {
+    const override = await kv.get('collection_override');
+    if (override?.disabled) {
+      return res.status(403).json({
+        error: override.label || 'Collection is unavailable this week. Please try delivery or check back next week.',
+      });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const orderId    = `ORD-${uuidv4().slice(0, 6).toUpperCase()}`;
   const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const fee        = orderType === 'delivery' ? (deliveryFee || 2.99) : 0;
   const total      = itemsTotal + fee;
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  // Save order to Sheets immediately as pending_payment
-  // Webhook only needs orderId — no metadata size limit ever again
   try {
     await appendOrder({
       orderId,
@@ -63,7 +77,6 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     console.error('[checkout] Failed to write pending order to Sheets:', e.message);
-    // Don't block checkout — Stripe webhook will still fire
   }
 
   const lineItems = items.map(item => ({
@@ -92,9 +105,7 @@ export default async function handler(req, res) {
       line_items: lineItems,
       mode: 'payment',
       customer_email: customer.email,
-      metadata: {
-        orderId, // only this needed — everything else is already in Sheets
-      },
+      metadata: { orderId },
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url:  `${appUrl}/?cancelled=true`,
     };

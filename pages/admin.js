@@ -10,6 +10,7 @@ export default function AdminPage() {
   const [authError,   setAuthError]   = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  // ── Holidays state ────────────────────────────────────────────────────────
   const [holidays,    setHolidays]    = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [saving,      setSaving]      = useState('');
@@ -22,11 +23,18 @@ export default function AdminPage() {
 
   const [statusInfo,  setStatusInfo]  = useState(null);
 
+  // ── Collection override state ─────────────────────────────────────────────
+  const [collOverride,      setCollOverride]      = useState(null);  // null = loading, object or false = loaded
+  const [collOverrideLoaded, setCollOverrideLoaded] = useState(false);
+  const [collLabel,         setCollLabel]         = useState('');
+  const [collSaving,        setCollSaving]        = useState(false);
+
   const showToast = (msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(''), 3200);
   };
 
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthLoading(true);
@@ -54,7 +62,6 @@ export default function AdminPage() {
     const saved = sessionStorage.getItem('rf_admin_pw');
     if (saved) {
       setPassword(saved);
-      // Auto-verify
       fetch('/api/holiday', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,11 +70,15 @@ export default function AdminPage() {
     }
   }, []);
 
+  // ── Load holidays + collection override ───────────────────────────────────
   useEffect(() => {
     if (!authed) return;
     setLoading(true);
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+
+    // Load holidays
     fetch('/api/holiday', {
-      headers: { 'x-admin-password': sessionStorage.getItem('rf_admin_pw') || password },
+      headers: { 'x-admin-password': pw },
     })
       .then(r => r.json())
       .then(data => {
@@ -75,8 +86,19 @@ export default function AdminPage() {
         setStatusInfo(data.status || null);
       })
       .finally(() => setLoading(false));
+
+    // Load collection override
+    fetch('/api/slot-override')
+      .then(r => r.json())
+      .then(data => {
+        setCollOverride(data.override || false);
+        if (data.override?.label) setCollLabel(data.override.label);
+        setCollOverrideLoaded(true);
+      })
+      .catch(() => setCollOverrideLoaded(true));
   }, [authed]);
 
+  // ── Holiday CRUD ──────────────────────────────────────────────────────────
   const addHoliday = async () => {
     setAddError('');
     if (!newFrom || !newTo) { setAddError('Please set both a start and end date.'); return; }
@@ -141,6 +163,61 @@ export default function AdminPage() {
     }
   };
 
+  // ── Collection override CRUD ──────────────────────────────────────────────
+  const disableCollection = async () => {
+    setCollSaving(true);
+    try {
+      const res = await fetch('/api/slot-override', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('rf_admin_pw') || password,
+        },
+        body: JSON.stringify({
+          disabled: true,
+          label: collLabel.trim() || 'Collection unavailable this week',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCollOverride(data.override);
+        showToast('Collection disabled for this week.');
+      } else {
+        showToast('Failed to save. Try again.', true);
+      }
+    } catch {
+      showToast('Network error. Try again.', true);
+    } finally {
+      setCollSaving(false);
+    }
+  };
+
+  const enableCollection = async () => {
+    setCollSaving(true);
+    try {
+      const res = await fetch('/api/slot-override', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('rf_admin_pw') || password,
+        },
+        body: JSON.stringify({ disabled: false }),
+      });
+      if (res.ok) {
+        setCollOverride(false);
+        setCollLabel('');
+        showToast('Collection re-enabled.');
+      } else {
+        showToast('Failed to re-enable. Try again.', true);
+      }
+    } catch {
+      showToast('Network error. Try again.', true);
+    } finally {
+      setCollSaving(false);
+    }
+  };
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const formatDate = (str) => {
     if (!str) return '';
     return new Date(str + 'T12:00:00').toLocaleDateString('en-GB', {
@@ -149,19 +226,18 @@ export default function AdminPage() {
   };
 
   const isActive = (h) => {
-    const now = new Date();
+    const now  = new Date();
     const from = new Date(h.from + 'T00:00:00');
     const to   = new Date(h.to   + 'T23:59:59');
     return now >= from && now <= to;
   };
 
   const isUpcoming = (h) => {
-    const now = new Date();
+    const now  = new Date();
     const from = new Date(h.from + 'T00:00:00');
     return from > now;
   };
 
-  // Sort: active first, then upcoming, then past
   const sortedHolidays = [...holidays].sort((a, b) => {
     const scoreA = isActive(a) ? 0 : isUpcoming(a) ? 1 : 2;
     const scoreB = isActive(b) ? 0 : isUpcoming(b) ? 1 : 2;
@@ -190,7 +266,6 @@ export default function AdminPage() {
           fontFamily: "'DM Sans', sans-serif",
           padding: '24px',
         }}>
-          {/* MS Logo */}
           <div style={{ marginBottom: '40px', textAlign: 'center' }}>
             <img src="/ms-logo.png" alt="Munro Studio" style={{ height: '52px', marginBottom: '12px' }} />
             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -206,13 +281,9 @@ export default function AdminPage() {
             width: '100%',
             maxWidth: '400px',
           }}>
-            <h1 style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              color: '#fff',
-              fontSize: '22px',
-              fontWeight: 600,
-              marginBottom: '6px',
-            }}>Root + Fuel Admin</h1>
+            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#fff', fontSize: '22px', fontWeight: 600, marginBottom: '6px' }}>
+              Root + Fuel Admin
+            </h1>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '32px' }}>
               Holiday & closure management
             </p>
@@ -280,12 +351,7 @@ export default function AdminPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
-      <div style={{
-        minHeight: '100vh',
-        background: '#f8f7f5',
-        fontFamily: "'DM Sans', sans-serif",
-        color: '#1a1a1a',
-      }}>
+      <div style={{ minHeight: '100vh', background: '#f8f7f5', fontFamily: "'DM Sans', sans-serif", color: '#1a1a1a' }}>
 
         {/* Toast */}
         {toast && (
@@ -316,39 +382,17 @@ export default function AdminPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <img src="/ms-logo.png" alt="Munro Studio" style={{ height: '32px' }} />
             <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
-            <span style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              color: '#fff',
-              fontSize: '15px',
-              fontWeight: 500,
-            }}>Root + Fuel Admin</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#fff', fontSize: '15px', fontWeight: 500 }}>
+              Root + Fuel Admin
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <a
-              href="/"
-              style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: '13px',
-                textDecoration: 'none',
-                padding: '6px 14px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-              }}
-            >
+            <a href="/" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', textDecoration: 'none', padding: '6px 14px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
               ← Back to site
             </a>
             <button
               onClick={() => { setAuthed(false); sessionStorage.removeItem('rf_admin_pw'); }}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.5)',
-                padding: '6px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
+              style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '6px 14px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Sign out
             </button>
@@ -359,14 +403,11 @@ export default function AdminPage() {
 
           {/* Page title */}
           <div style={{ marginBottom: '32px' }}>
-            <h1 style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: '28px',
-              fontWeight: 700,
-              marginBottom: '6px',
-            }}>Holiday & Closure Management</h1>
+            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '28px', fontWeight: 700, marginBottom: '6px' }}>
+              Site Management
+            </h1>
             <p style={{ color: '#6b7280', fontSize: '15px' }}>
-              Schedule closures and the website will automatically lock ordering for those dates.
+              Manage holiday closures and collection availability.
             </p>
           </div>
 
@@ -382,18 +423,9 @@ export default function AdminPage() {
               alignItems: 'center',
               gap: '14px',
             }}>
-              <div style={{
-                width: '10px', height: '10px', borderRadius: '50%',
-                background: statusInfo.locked ? '#ef4444' : '#22c55e',
-                flexShrink: 0,
-              }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: statusInfo.locked ? '#ef4444' : '#22c55e', flexShrink: 0 }} />
               <div>
-                <p style={{
-                  fontWeight: 600,
-                  color: statusInfo.locked ? '#b91c1c' : '#15803d',
-                  fontSize: '15px',
-                  marginBottom: '2px',
-                }}>
+                <p style={{ fontWeight: 600, color: statusInfo.locked ? '#b91c1c' : '#15803d', fontSize: '15px', marginBottom: '2px' }}>
                   {statusInfo.locked ? 'Ordering is currently CLOSED' : 'Ordering is currently OPEN'}
                 </p>
                 <p style={{ color: statusInfo.locked ? '#dc2626' : '#16a34a', fontSize: '13px' }}>
@@ -403,41 +435,136 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Add new holiday */}
+          {/* ── COLLECTION OVERRIDE PANEL ─────────────────────────────────── */}
           <div style={{
             background: '#fff',
-            border: '1px solid rgba(0,0,0,0.08)',
+            border: `1px solid ${collOverride?.disabled ? '#fecaca' : 'rgba(0,0,0,0.08)'}`,
             borderRadius: '16px',
             padding: '28px',
             marginBottom: '28px',
           }}>
-            <h2 style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: '17px',
-              fontWeight: 600,
-              marginBottom: '20px',
-            }}>Add a closure period</h2>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '18px', flexWrap: 'wrap' }}>
+              <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', fontWeight: 600, marginBottom: '4px' }}>
+                  Collection Availability
+                </h2>
+                <p style={{ color: '#6b7280', fontSize: '14px' }}>
+                  Temporarily disable collection for a week if you're closing early or unavailable.
+                </p>
+              </div>
+              {/* Status pill */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: collOverride?.disabled ? '#fef2f2' : '#f0fdf4',
+                border: `1px solid ${collOverride?.disabled ? '#fecaca' : '#bbf7d0'}`,
+                borderRadius: '100px',
+                padding: '6px 14px',
+                flexShrink: 0,
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: collOverride?.disabled ? '#ef4444' : '#22c55e' }} />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: collOverride?.disabled ? '#b91c1c' : '#15803d' }}>
+                  {collOverride?.disabled ? 'Collection OFF' : 'Collection ON'}
+                </span>
+              </div>
+            </div>
+
+            {/* Active override banner */}
+            {collOverride?.disabled && (
+              <div style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '10px',
+                padding: '14px 18px',
+                marginBottom: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#b91c1c', marginBottom: '2px' }}>
+                    🚫 {collOverride.label}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#dc2626' }}>
+                    Customers cannot select collection at checkout.
+                  </p>
+                </div>
+                <button
+                  onClick={enableCollection}
+                  disabled={collSaving}
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #fecaca',
+                    color: '#dc2626',
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    cursor: collSaving ? 'not-allowed' : 'pointer',
+                    opacity: collSaving ? 0.6 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  {collSaving ? 'Saving…' : '✓ Re-enable Collection'}
+                </button>
+              </div>
+            )}
+
+            {/* Disable form — only shown when collection is currently ON */}
+            {!collOverride?.disabled && (
+              <div>
+                <label style={labelStyle}>Reason shown to customers (optional)</label>
+                <input
+                  type="text"
+                  value={collLabel}
+                  onChange={e => setCollLabel(e.target.value)}
+                  placeholder="e.g. Collection unavailable — closing early this Tuesday"
+                  style={{ ...inputStyle, marginBottom: '16px' }}
+                />
+                <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', lineHeight: 1.5 }}>
+                  This disables collection at checkout immediately. Delivery will still be available.
+                  You can re-enable it at any time from this panel.
+                </p>
+                <button
+                  onClick={disableCollection}
+                  disabled={collSaving || !collOverrideLoaded}
+                  style={{
+                    background: collSaving ? 'rgba(220,38,38,0.4)' : '#dc2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    cursor: collSaving || !collOverrideLoaded ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {collSaving ? 'Saving…' : '🚫 Disable Collection This Week'}
+                </button>
+              </div>
+            )}
+          </div>
+          {/* ── END COLLECTION OVERRIDE PANEL ────────────────────────────── */}
+
+          {/* Add new holiday */}
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '28px', marginBottom: '28px' }}>
+            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', fontWeight: 600, marginBottom: '20px' }}>
+              Add a closure period
+            </h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Closure starts</label>
-                <input
-                  type="date"
-                  value={newFrom}
-                  min={today}
-                  onChange={e => setNewFrom(e.target.value)}
-                  style={inputStyle}
-                />
+                <input type="date" value={newFrom} min={today} onChange={e => setNewFrom(e.target.value)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Closure ends</label>
-                <input
-                  type="date"
-                  value={newTo}
-                  min={newFrom || today}
-                  onChange={e => setNewTo(e.target.value)}
-                  style={inputStyle}
-                />
+                <input type="date" value={newTo} min={newFrom || today} onChange={e => setNewTo(e.target.value)} style={inputStyle} />
               </div>
             </div>
 
@@ -452,9 +579,7 @@ export default function AdminPage() {
               />
             </div>
 
-            {addError && (
-              <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>{addError}</p>
-            )}
+            {addError && <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>{addError}</p>}
 
             {newFrom && newTo && new Date(newTo) >= new Date(newFrom) && (
               <div style={{
@@ -475,14 +600,9 @@ export default function AdminPage() {
               disabled={saving === 'add'}
               style={{
                 background: saving === 'add' ? 'rgba(37,99,235,0.5)' : MS_BLUE,
-                color: '#fff',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '12px 24px',
-                fontSize: '14px',
-                fontWeight: 600,
-                fontFamily: 'inherit',
-                cursor: saving === 'add' ? 'not-allowed' : 'pointer',
+                color: '#fff', border: 'none', borderRadius: '10px',
+                padding: '12px 24px', fontSize: '14px', fontWeight: 600,
+                fontFamily: 'inherit', cursor: saving === 'add' ? 'not-allowed' : 'pointer',
               }}
             >
               {saving === 'add' ? 'Saving…' : '+ Add closure period'}
@@ -490,40 +610,22 @@ export default function AdminPage() {
           </div>
 
           {/* Holidays list */}
-          <div style={{
-            background: '#fff',
-            border: '1px solid rgba(0,0,0,0.08)',
-            borderRadius: '16px',
-            overflow: 'hidden',
-          }}>
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
             <div style={{
               padding: '20px 28px',
               borderBottom: '1px solid rgba(0,0,0,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <h2 style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: '17px',
-                fontWeight: 600,
-              }}>Scheduled closures</h2>
-              <span style={{
-                background: '#f3f4f6',
-                borderRadius: '20px',
-                padding: '3px 12px',
-                fontSize: '13px',
-                color: '#6b7280',
-                fontWeight: 500,
-              }}>
+              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', fontWeight: 600 }}>
+                Scheduled closures
+              </h2>
+              <span style={{ background: '#f3f4f6', borderRadius: '20px', padding: '3px 12px', fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
                 {holidays.length} {holidays.length === 1 ? 'period' : 'periods'}
               </span>
             </div>
 
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
-                Loading closures…
-              </div>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>Loading closures…</div>
             ) : sortedHolidays.length === 0 ? (
               <div style={{ padding: '48px', textAlign: 'center' }}>
                 <div style={{ fontSize: '36px', marginBottom: '12px' }}>🌴</div>
@@ -544,12 +646,8 @@ export default function AdminPage() {
                       style={{
                         padding: '18px 28px',
                         borderBottom: i < sortedHolidays.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '16px',
-                        opacity: past ? 0.5 : 1,
-                        flexWrap: 'wrap',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: '16px', opacity: past ? 0.5 : 1, flexWrap: 'wrap',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
@@ -557,51 +655,33 @@ export default function AdminPage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, fontSize: '15px' }}>{h.label}</span>
                             {active && (
-                              <span style={{
-                                background: '#fef2f2', color: '#b91c1c',
-                                border: '1px solid #fecaca',
-                                padding: '2px 10px', borderRadius: '20px',
-                                fontSize: '11px', fontWeight: 600,
-                                letterSpacing: '0.5px', textTransform: 'uppercase',
-                              }}>Active now</span>
+                              <span style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '2px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                Active now
+                              </span>
                             )}
                             {upcoming && (
-                              <span style={{
-                                background: '#eff6ff', color: '#1d4ed8',
-                                border: '1px solid #bfdbfe',
-                                padding: '2px 10px', borderRadius: '20px',
-                                fontSize: '11px', fontWeight: 600,
-                                letterSpacing: '0.5px', textTransform: 'uppercase',
-                              }}>Upcoming</span>
+                              <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                Upcoming
+                              </span>
                             )}
                             {past && (
-                              <span style={{
-                                background: '#f9fafb', color: '#9ca3af',
-                                border: '1px solid #e5e7eb',
-                                padding: '2px 10px', borderRadius: '20px',
-                                fontSize: '11px', fontWeight: 500,
-                              }}>Past</span>
+                              <span style={{ background: '#f9fafb', color: '#9ca3af', border: '1px solid #e5e7eb', padding: '2px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 500 }}>
+                                Past
+                              </span>
                             )}
                           </div>
-                          <p style={{ fontSize: '13px', color: '#6b7280' }}>
-                            {formatDate(h.from)} → {formatDate(h.to)}
-                          </p>
+                          <p style={{ fontSize: '13px', color: '#6b7280' }}>{formatDate(h.from)} → {formatDate(h.to)}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => removeHoliday(h.id)}
                         disabled={saving === h.id}
                         style={{
-                          background: 'transparent',
-                          border: '1px solid #fecaca',
+                          background: 'transparent', border: '1px solid #fecaca',
                           color: saving === h.id ? '#fca5a5' : '#dc2626',
-                          padding: '7px 16px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          fontFamily: 'inherit',
-                          cursor: saving === h.id ? 'not-allowed' : 'pointer',
-                          flexShrink: 0,
+                          padding: '7px 16px', borderRadius: '8px', fontSize: '13px',
+                          fontWeight: 500, fontFamily: 'inherit',
+                          cursor: saving === h.id ? 'not-allowed' : 'pointer', flexShrink: 0,
                         }}
                       >
                         {saving === h.id ? 'Removing…' : 'Remove'}
@@ -614,26 +694,17 @@ export default function AdminPage() {
           </div>
 
           {/* How it works */}
-          <div style={{
-            background: '#fff',
-            border: '1px solid rgba(0,0,0,0.08)',
-            borderRadius: '16px',
-            padding: '24px 28px',
-            marginTop: '28px',
-          }}>
-            <h3 style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: '15px',
-              fontWeight: 600,
-              marginBottom: '14px',
-              color: '#374151',
-            }}>How it works</h3>
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '24px 28px', marginTop: '28px' }}>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', fontWeight: 600, marginBottom: '14px', color: '#374151' }}>
+              How it works
+            </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                ['🔒', 'During a closure period, the website locks ordering automatically — customers see a friendly "we\'re on a break" message.'],
-                ['📅', 'The existing Sat–Tue weekly lock still applies on top of any holidays you schedule here.'],
-                ['✅', 'When the closure ends, the site reopens on its own — no action needed from you.'],
-                ['🗑️', 'You can remove a scheduled closure at any time, even while it\'s active.'],
+                ['🛍️', 'Use "Disable Collection" above to block collection orders for the week — delivery still works normally.'],
+                ['🔒', 'During a full closure period, the website locks all ordering automatically — customers see a friendly message.'],
+                ['📅', 'The existing Sat–Tue weekly lock still applies on top of any holidays or collection overrides.'],
+                ['✅', 'Everything re-enables automatically or the moment you click re-enable — no action needed.'],
+                ['🗑️', 'You can remove or change anything at any time, even while it\'s active.'],
               ].map(([icon, text], i) => (
                 <div key={i} style={{ display: 'flex', gap: '12px', fontSize: '14px', color: '#4b5563' }}>
                   <span style={{ fontSize: '16px', flexShrink: 0 }}>{icon}</span>
@@ -645,12 +716,7 @@ export default function AdminPage() {
 
         </main>
 
-        {/* Footer */}
-        <footer style={{
-          background: MS_DARK,
-          padding: '20px 28px',
-          textAlign: 'center',
-        }}>
+        <footer style={{ background: MS_DARK, padding: '20px 28px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>
             Built &amp; maintained by{' '}
             <a href="https://munrostudio.co.uk" target="_blank" rel="noreferrer" style={{ color: MS_BLUE, textDecoration: 'none' }}>
