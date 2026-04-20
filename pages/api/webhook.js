@@ -1,5 +1,7 @@
+// pages/api/webhook.js
 import Stripe from 'stripe';
-import { getOrderById, updateOrderStatus } from '../../lib/sheets';
+import { kv } from '@vercel/kv';
+import { appendOrder } from '../../lib/sheets';
 import { Resend } from 'resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -150,27 +152,46 @@ export default async function handler(req, res) {
       return res.json({ received: true });
     }
 
-    // Fetch full order from Sheets — no metadata size limit ever again
+    // ── Fetch full order from KV ──────────────────────────────────────────
     let order;
     try {
-      order = await getOrderById(orderId);
+      order = await kv.get(`pending_order:${orderId}`);
     } catch (e) {
-      console.error('[webhook] Failed to fetch order from Sheets:', e.message);
+      console.error('[webhook] Failed to fetch order from KV:', e.message);
     }
 
     if (!order) {
-      console.error(`[webhook] Order ${orderId} not found in Sheets`);
+      console.error(`[webhook] Order ${orderId} not found in KV (expired or missing)`);
       return res.json({ received: true });
     }
-
-    // Update status to paid
-    try {
-      await updateOrderStatus(orderId, 'paid');
-    } catch (e) {
-      console.error('[webhook] Failed to update order status:', e.message);
-    }
+    // ──────────────────────────────────────────────────────────────────────
 
     const total = session.amount_total / 100;
+
+    // ── Write the order to Sheets with status "paid" (single row, never pending) ─
+    try {
+      await appendOrder({
+        orderId,
+        status:         'paid',
+        type:           order.type,
+        name:           order.name,
+        email:          order.email,
+        phone:          order.phone,
+        table:          order.table,
+        address:        order.address,
+        items:          order.items,
+        total,
+        deliveryFee:    order.deliveryFee,
+        notes:          order.notes,
+        collectionSlot: order.collectionSlot,
+      });
+    } catch (e) {
+      console.error('[webhook] Failed to append paid order to Sheets:', e.message);
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Normalise orderType for emails (checkout uses 'pickup', emails branch on it)
+    const orderType = order.type;
 
     /* Send Customer email */
     try {
@@ -179,7 +200,7 @@ export default async function handler(req, res) {
         name:           order.name,
         items:          order.items,
         total,
-        orderType:      order.orderType,
+        orderType,
         address:        order.address,
         notes:          order.notes,
         collectionSlot: order.collectionSlot,
@@ -202,7 +223,7 @@ export default async function handler(req, res) {
         phone:          order.phone,
         items:          order.items,
         total,
-        orderType:      order.orderType,
+        orderType,
         address:        order.address,
         notes:          order.notes,
         collectionSlot: order.collectionSlot,
@@ -214,6 +235,13 @@ export default async function handler(req, res) {
       });
     } catch (e) {
       console.error('[webhook] Owner email error:', e.message);
+    }
+
+    // ── Clean up KV now that order is confirmed and emailed ───────────────
+    try {
+      await kv.del(`pending_order:${orderId}`);
+    } catch (e) {
+      console.error('[webhook] Failed to delete KV key:', e.message);
     }
   }
 

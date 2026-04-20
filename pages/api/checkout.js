@@ -1,7 +1,6 @@
 // pages/api/checkout.js
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
-import { appendOrder } from '../../lib/sheets';
 import { kv } from '@vercel/kv';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -41,8 +40,6 @@ export default async function handler(req, res) {
   }
 
   // ── Collection override check ─────────────────────────────────────────────
-  // If Samantha has disabled collection for this week via the admin panel,
-  // block any pickup orders at the server level.
   if (orderType === 'pickup') {
     const override = await kv.get('collection_override');
     if (override?.disabled) {
@@ -59,25 +56,32 @@ export default async function handler(req, res) {
   const total      = itemsTotal + fee;
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+  // ── Stash full order in KV — webhook will read this back ─────────────────
+  // 24h TTL = abandoned carts auto-expire, nothing ever hits the Sheet.
   try {
-    await appendOrder({
-      orderId,
-      status:         'pending_payment',
-      type:           orderType,
-      name:           customer.name,
-      email:          customer.email,
-      phone:          customer.phone || '',
-      table:          table || '',
-      address:        address || '',
-      items,
-      total,
-      deliveryFee:    fee,
-      notes:          notes || '',
-      collectionSlot: collectionSlot || '',
-    });
+    await kv.set(
+      `pending_order:${orderId}`,
+      {
+        orderId,
+        type:           orderType,
+        name:           customer.name,
+        email:          customer.email,
+        phone:          customer.phone || '',
+        table:          table || '',
+        address:        address || '',
+        items,
+        total,
+        deliveryFee:    fee,
+        notes:          notes || '',
+        collectionSlot: collectionSlot || '',
+      },
+      { ex: 60 * 60 * 24 } // 24 hours
+    );
   } catch (e) {
-    console.error('[checkout] Failed to write pending order to Sheets:', e.message);
+    console.error('[checkout] Failed to stash order in KV:', e.message);
+    return res.status(500).json({ error: 'Could not start checkout. Please try again.' });
   }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const lineItems = items.map(item => ({
     price_data: {
@@ -105,7 +109,7 @@ export default async function handler(req, res) {
       line_items: lineItems,
       mode: 'payment',
       customer_email: customer.email,
-      metadata: { orderId },
+      metadata: { orderId }, // tiny — just the ID, well under 500 chars
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url:  `${appUrl}/?cancelled=true`,
     };
@@ -120,6 +124,8 @@ export default async function handler(req, res) {
     res.status(200).json({ sessionId: session.id, url: session.url });
   } catch (err) {
     console.error('[checkout] Stripe error:', err.message);
+    // Clean up the stashed order since checkout failed
+    await kv.del(`pending_order:${orderId}`).catch(() => {});
     res.status(500).json({ error: err.message });
   }
 }
