@@ -596,6 +596,7 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
         </footer>
 
       </div>
+      <Analytics />
     </>
   );
 }
