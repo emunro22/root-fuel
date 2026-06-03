@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 
 const MS_BLUE = '#2563EB';
@@ -564,6 +564,7 @@ export default function AdminPage() {
                     item={newItem}
                     onChange={setNewItem}
                     onSave={addMenuItem}
+                    adminPw={sessionStorage.getItem('rf_admin_pw') || password}
                     onCancel={() => { setShowAddForm(false); setNewItem(EMPTY_ITEM); }}
                     saving={menuSaving === 'add'}
                     saveLabel="Add to Menu"
@@ -609,6 +610,7 @@ export default function AdminPage() {
                             item={editingItem}
                             onChange={setEditingItem}
                             onSave={saveEditItem}
+                            adminPw={sessionStorage.getItem('rf_admin_pw') || password}
                             onCancel={() => setEditingItem(null)}
                             saving={menuSaving === item.rowNumber}
                             saveLabel="Save Changes"
@@ -700,8 +702,60 @@ export default function AdminPage() {
 }
 
 // ── Reusable item form (add & edit) ───────────────────────────────────────────
-function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel }) {
+function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adminPw }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
+
   const set = (field, val) => onChange(prev => ({ ...prev, [field]: val }));
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError('Image must be under 8 MB.');
+      return;
+    }
+    setUploadError('');
+    setUploading(true);
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, data: base64 }),
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const { url } = await res.json();
+      set('image', url);
+    } catch {
+      setUploadError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = async () => {
+    const url = item.image;
+    set('image', '');
+    // Only attempt blob deletion for Vercel Blob URLs
+    if (url && url.includes('vercel-storage.com')) {
+      try {
+        await fetch('/api/upload-image', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+          body: JSON.stringify({ url }),
+        });
+      } catch { /* best-effort */ }
+    }
+  };
+
   return (
     <div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'12px', marginBottom:'12px' }}>
@@ -724,10 +778,68 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel }) {
         <label style={labelStyle}>Description</label>
         <input type="text" value={item.description} onChange={e=>set('description', e.target.value)} placeholder="Short description…" style={inputStyle} />
       </div>
+
+      {/* Image upload */}
       <div style={{ marginBottom:'16px' }}>
-        <label style={labelStyle}>Image URL</label>
-        <input type="text" value={item.image} onChange={e=>set('image', e.target.value)} placeholder="https://…" style={inputStyle} />
+        <label style={labelStyle}>Image</label>
+        {item.image ? (
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' }}>
+            <img
+              src={item.image}
+              alt="Preview"
+              onError={e => e.target.style.display = 'none'}
+              style={{ width:'72px', height:'72px', borderRadius:'10px', objectFit:'cover', border:'1px solid rgba(0,0,0,0.08)', flexShrink:0 }}
+            />
+            <div style={{ flex:1, minWidth:0 }}>
+              <p style={{ fontSize:'12px', color:'#6b7280', marginBottom:'8px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {item.image}
+              </p>
+              <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}
+                >
+                  Replace image
+                </button>
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  disabled={uploading}
+                  style={{ background:'transparent', border:'1px solid #fecaca', color:'#dc2626', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}
+                >
+                  Remove image
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            style={{ border:'2px dashed rgba(0,0,0,0.12)', borderRadius:'12px', padding:'24px 16px', textAlign:'center', cursor:uploading?'not-allowed':'pointer', background:'#fafafa', transition:'border-color 0.15s' }}
+          >
+            {uploading ? (
+              <p style={{ color:'#6b7280', fontSize:'13px' }}>Uploading…</p>
+            ) : (
+              <>
+                <p style={{ fontSize:'22px', marginBottom:'6px' }}>📷</p>
+                <p style={{ fontSize:'13px', fontWeight:500, color:'#374151', marginBottom:'3px' }}>Click to upload an image</p>
+                <p style={{ fontSize:'12px', color:'#9ca3af' }}>JPG, PNG, WebP · max 8 MB</p>
+              </>
+            )}
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          style={{ display:'none' }}
+        />
+        {uploadError && <p style={{ color:'#ef4444', fontSize:'12px', marginTop:'6px' }}>{uploadError}</p>}
       </div>
+
       <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px' }}>
         <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'14px', color:'#374151' }}>
           <input
@@ -740,7 +852,7 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel }) {
         </label>
       </div>
       <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-        <button onClick={onSave} disabled={saving} style={{ background:saving?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:"'DM Sans', sans-serif", cursor:saving?'not-allowed':'pointer' }}>
+        <button onClick={onSave} disabled={saving || uploading} style={{ background:(saving||uploading)?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:"'DM Sans', sans-serif", cursor:(saving||uploading)?'not-allowed':'pointer' }}>
           {saving?'Saving…':saveLabel}
         </button>
         <button onClick={onCancel} disabled={saving} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}>
