@@ -19,25 +19,25 @@ function getLockStatus(holidays) {
     }
   }
 
-  // 2. Weekly lock
+  // 2. Weekly lock — Mon(1), Tue(2), Wed(3), Thu(4)
   const day = now.getDay();
-  if (day === 0 || day === 1 || day === 2) {
+  if (day === 1 || day === 2 || day === 3 || day === 4) {
     return {
       locked: true,
-      reason: "Orders are closed while we fulfil this week's batch. Reopens Wednesday.",
+      reason: "Orders are closed while we prepare this week's batch. Reopens Friday.",
       source: 'weekly',
     };
   }
 
-  // 3. Open
-  const daysUntilSat = (6 - day + 7) % 7;
+  // 3. Open — Fri(5), Sat(6), Sun(0); deadline = Sunday midnight
+  const daysUntilSun = (7 - day) % 7;
   const target = new Date(now);
-  target.setDate(now.getDate() + daysUntilSat);
+  target.setDate(now.getDate() + daysUntilSun);
   target.setHours(23, 59, 59, 999);
 
   return {
     locked: false,
-    reason: 'Ordering is open until Saturday midnight.',
+    reason: 'Ordering is open until Sunday midnight.',
     source: 'open',
     deadline: target.toISOString(),
   };

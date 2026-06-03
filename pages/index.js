@@ -22,10 +22,10 @@ const GREEN = '#2d6b27';
 
 /**
  * Ordering schedule:
- *   Wed 00:00 → Sat 23:59:59  — OPEN   (countdown to Saturday midnight)
- *   Sun 00:00 → Tue 23:59:59  — LOCKED (orders closed)
+ *   Fri 00:00 → Sun 23:59:59  — OPEN   (countdown to Sunday midnight)
+ *   Mon 00:00 → Thu 23:59:59  — LOCKED (orders closed)
  *
- * Cutoff is Saturday midnight. Orders reopen Wednesday morning.
+ * Cutoff is Sunday midnight. Orders reopen Friday morning.
  */
 
 function useCountdown() {
@@ -76,13 +76,13 @@ function useCountdown() {
 
       } catch {
         const day = new Date().getDay();
-        const isWeeklyLocked = day === 0 || day === 1 || day === 2;
+        const isWeeklyLocked = day === 1 || day === 2 || day === 3 || day === 4;
 
         setLocked(isWeeklyLocked);
         setLockReason(
           isWeeklyLocked
-            ? "Orders are closed while we fulfil this week's batch. Reopens Wednesday."
-            : "Ordering is open until Saturday midnight."
+            ? "Orders are closed while we prepare this week's batch. Reopens Friday."
+            : "Ordering is open until Sunday midnight."
         );
         setLockSource(isWeeklyLocked ? 'weekly' : 'open');
       }
@@ -120,6 +120,12 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
     '/food/dish2.jpg',
     '/food/dish3.jpg',
     '/food/dish4.jpg',
+    '/food/dish5.jpg',
+    '/food/dish6.jpg',
+    '/food/dish7.jpg',
+    '/food/dish8.jpg',
+    '/food/dish9.jpg',
+    '/food/dish10.jpg',
   ];
   const [carouselIndex, setCarouselIndex] = useState(0);
   useEffect(() => {
@@ -194,10 +200,10 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
       </Head>
       <div style={{ background: CREAM, minHeight: '100vh', color: '#1a2418' }}>
 
-        {/* Tuesday banner */}
+        {/* Friday banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
-          <strong>Orders &amp; collections are available on Tuesdays only.</strong>{' '}
-          Place your order by Saturday midnight for Tuesday pickup or delivery.
+          <strong>Orders &amp; collections are available on Fridays only.</strong>{' '}
+          Place your order by Sunday midnight for Friday pickup or delivery.
         </div>
 
 
@@ -328,7 +334,7 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
                 ) : timeLeft ? (
                   <>
                     <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '12px' }}>
-                      Order deadline — Saturday midnight
+                      Order deadline — Sunday midnight
                     </div>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       {[
