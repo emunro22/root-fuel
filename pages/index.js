@@ -5,6 +5,7 @@ import Cart from '../components/Cart';
 import MenuItem from '../components/MenuItem';
 import OrderForm from '../components/OrderForm';
 import CateringModal from '../components/CateringModal';
+import { Analytics } from "@vercel/analytics/next"
 
 const CATEGORIES = [
   { name: 'Starters',       icon: '' },
