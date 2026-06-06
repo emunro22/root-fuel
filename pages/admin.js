@@ -46,6 +46,14 @@ export default function AdminPage() {
   const [newItem,      setNewItem]      = useState(EMPTY_ITEM);
   const [menuSaving,   setMenuSaving]   = useState('');    // rowNumber | 'add' | ''
 
+  // ── Promo codes state ─────────────────────────────────────────────────────
+  const [promoCodes,   setPromoCodes]   = useState([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [showAddPromo, setShowAddPromo] = useState(false);
+  const [promoSaving,  setPromoSaving]  = useState('');
+  const EMPTY_PROMO = { code: '', type: 'percent', amount: '', maxRedemptions: '', expiresAt: '', showOnSite: true };
+  const [newPromo,     setNewPromo]     = useState(EMPTY_PROMO);
+
   const showToast = (msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(''), 3200);
@@ -128,6 +136,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (authed && activeTab === 'menu') loadMenu();
+    if (authed && activeTab === 'promos') loadPromos();
   }, [authed, activeTab]);
 
   // ── Holiday CRUD ──────────────────────────────────────────────────────────
@@ -288,6 +297,73 @@ export default function AdminPage() {
     finally { setMenuSaving(''); }
   };
 
+  // ── Promo code CRUD ──────────────────────────────────────────────────────
+  const loadPromos = async () => {
+    setPromoLoading(true);
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    try {
+      const res = await fetch('/api/promo-admin', { headers: { 'x-admin-password': pw } });
+      const data = await res.json();
+      setPromoCodes(data.codes || []);
+    } catch { showToast('Failed to load promo codes.', true); }
+    finally { setPromoLoading(false); }
+  };
+
+  const createPromo = async () => {
+    if (!newPromo.code.trim()) { showToast('Code is required.', true); return; }
+    if (!newPromo.amount) { showToast('Discount amount is required.', true); return; }
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    setPromoSaving('add');
+    try {
+      const res = await fetch('/api/promo-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify(newPromo),
+      });
+      if (res.ok) {
+        await loadPromos();
+        setNewPromo(EMPTY_PROMO);
+        setShowAddPromo(false);
+        showToast('Promo code created.');
+      } else {
+        const d = await res.json();
+        showToast(d.error || 'Failed to create code.', true);
+      }
+    } catch { showToast('Network error.', true); }
+    finally { setPromoSaving(''); }
+  };
+
+  const deactivatePromo = async (id, code) => {
+    if (!confirm(`Deactivate "${code}"? Customers will no longer be able to use it.`)) return;
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    setPromoSaving(id);
+    try {
+      const res = await fetch('/api/promo-admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) { await loadPromos(); showToast('Code deactivated.'); }
+      else showToast('Failed to deactivate.', true);
+    } catch { showToast('Network error.', true); }
+    finally { setPromoSaving(''); }
+  };
+
+  const togglePromoSite = async (id, currentVal) => {
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    setPromoSaving(id + '_toggle');
+    try {
+      const res = await fetch('/api/promo-admin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ id, showOnSite: !currentVal }),
+      });
+      if (res.ok) { await loadPromos(); showToast(`Code ${!currentVal ? 'shown on' : 'hidden from'} website.`); }
+      else showToast('Failed to update.', true);
+    } catch { showToast('Network error.', true); }
+    finally { setPromoSaving(''); }
+  };
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   const formatDate = (str) => {
     if (!str) return '';
@@ -386,6 +462,7 @@ export default function AdminPage() {
             {[
               { id:'schedule', label:'Schedule & Closures' },
               { id:'menu',     label:'Menu Items' },
+              { id:'promos',   label:'Promo Codes' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -674,6 +751,173 @@ export default function AdminPage() {
                 <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                   <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#d1d5db' }} />
                   Unavailable
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── PROMO CODES TAB ─────────────────────────────────────────── */}
+          {activeTab === 'promos' && (
+            <>
+              {/* Header row */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
+                <div>
+                  <h2 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'20px', fontWeight:700, marginBottom:'2px' }}>Promo Codes</h2>
+                  <p style={{ color:'#6b7280', fontSize:'13px' }}>Create and manage discount codes via Stripe. Toggle "Show on site" to display a code on your homepage.</p>
+                </div>
+                <button
+                  onClick={() => setShowAddPromo(p => !p)}
+                  style={{ background:MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 18px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                >
+                  {showAddPromo ? '✕ Cancel' : '+ New Code'}
+                </button>
+              </div>
+
+              {/* Add promo form */}
+              {showAddPromo && (
+                <div style={{ background:'#fff', border:`2px solid ${MS_BLUE}`, borderRadius:'16px', padding:'24px', marginBottom:'20px' }}>
+                  <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'16px', fontWeight:600, marginBottom:'18px' }}>New Promo Code</h3>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'12px', marginBottom:'12px' }}>
+                    <div>
+                      <label style={labelStyle}>Code *</label>
+                      <input
+                        type="text" value={newPromo.code}
+                        onChange={e => setNewPromo(p => ({ ...p, code: e.target.value.toUpperCase() }))}
+                        placeholder="e.g. WELCOME10" style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Discount Type</label>
+                      <select value={newPromo.type} onChange={e => setNewPromo(p => ({ ...p, type: e.target.value }))} style={inputStyle}>
+                        <option value="percent">Percentage off</option>
+                        <option value="fixed">Fixed amount off (£)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>{newPromo.type === 'percent' ? 'Percentage (%)' : 'Amount (£)'} *</label>
+                      <input
+                        type="number" min="0" step={newPromo.type === 'percent' ? '1' : '0.01'}
+                        value={newPromo.amount} onChange={e => setNewPromo(p => ({ ...p, amount: e.target.value }))}
+                        placeholder={newPromo.type === 'percent' ? '10' : '5.00'} style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Max uses (optional)</label>
+                      <input
+                        type="number" min="1" value={newPromo.maxRedemptions}
+                        onChange={e => setNewPromo(p => ({ ...p, maxRedemptions: e.target.value }))}
+                        placeholder="Unlimited" style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Expires (optional)</label>
+                      <input
+                        type="date" value={newPromo.expiresAt}
+                        onChange={e => setNewPromo(p => ({ ...p, expiresAt: e.target.value }))}
+                        min={new Date().toISOString().split('T')[0]} style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                  <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', fontSize:'14px', color:'#374151', marginBottom:'20px' }}>
+                    <input
+                      type="checkbox" checked={newPromo.showOnSite}
+                      onChange={e => setNewPromo(p => ({ ...p, showOnSite: e.target.checked }))}
+                      style={{ width:'16px', height:'16px', cursor:'pointer' }}
+                    />
+                    Show this code on the website (customers can see and copy it)
+                  </label>
+                  <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+                    <button
+                      onClick={createPromo} disabled={promoSaving === 'add'}
+                      style={{ background:promoSaving==='add'?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:promoSaving==='add'?'not-allowed':'pointer' }}
+                    >
+                      {promoSaving === 'add' ? 'Creating…' : 'Create Code'}
+                    </button>
+                    <button onClick={() => { setShowAddPromo(false); setNewPromo(EMPTY_PROMO); }} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:500, fontFamily:'inherit', cursor:'pointer' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Promo codes list */}
+              <div style={{ background:'#fff', border:'1px solid rgba(0,0,0,0.08)', borderRadius:'16px', overflow:'hidden' }}>
+                <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(0,0,0,0.06)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                  <h2 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'16px', fontWeight:600 }}>All codes</h2>
+                  <button onClick={loadPromos} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#6b7280', borderRadius:'8px', padding:'5px 12px', fontSize:'12px', fontFamily:'inherit', cursor:'pointer' }}>↻ Refresh</button>
+                </div>
+                {promoLoading ? (
+                  <div style={{ padding:'32px', textAlign:'center', color:'#9ca3af' }}>Loading…</div>
+                ) : promoCodes.length === 0 ? (
+                  <div style={{ padding:'48px', textAlign:'center' }}>
+                    <div style={{ fontSize:'32px', marginBottom:'10px' }}>🏷️</div>
+                    <p style={{ color:'#6b7280', fontSize:'14px' }}>No promo codes yet. Create one above.</p>
+                  </div>
+                ) : (
+                  <div>
+                    {promoCodes.map((c, i) => {
+                      const isPublic = c.metadata?.public === 'true';
+                      const discount = c.coupon?.percent_off
+                        ? `${c.coupon.percent_off}% off`
+                        : `£${(c.coupon?.amount_off / 100).toFixed(2)} off`;
+                      const expired = c.expires_at && new Date(c.expires_at * 1000) < new Date();
+                      return (
+                        <div key={c.id} style={{ padding:'14px 20px', borderBottom:i<promoCodes.length-1?'1px solid rgba(0,0,0,0.05)':'none', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap', opacity:!c.active||expired?0.55:1 }}>
+                          <div style={{ minWidth:0, flex:1 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap', marginBottom:'3px' }}>
+                              <span style={{ fontFamily:'monospace', fontWeight:700, fontSize:'15px', color:'#111', letterSpacing:'0.5px' }}>{c.code}</span>
+                              <span style={{ background:'#eff6ff', color:'#1d4ed8', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', fontWeight:600 }}>{discount}</span>
+                              {!c.active && <span style={{ background:'#fef2f2', color:'#b91c1c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fecaca' }}>Inactive</span>}
+                              {c.active && expired && <span style={{ background:'#fef2f2', color:'#b91c1c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fecaca' }}>Expired</span>}
+                              {isPublic && c.active && !expired && <span style={{ background:'#f0fdf4', color:'#15803d', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #bbf7d0' }}>On site</span>}
+                            </div>
+                            <p style={{ fontSize:'12px', color:'#9ca3af' }}>
+                              Used {c.times_redeemed}×{c.max_redemptions ? ` of ${c.max_redemptions}` : ''}
+                              {c.expires_at ? ` · Expires ${new Date(c.expires_at * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}` : ''}
+                            </p>
+                          </div>
+                          <div style={{ display:'flex', gap:'6px', flexShrink:0, flexWrap:'wrap' }}>
+                            {c.active && !expired && (
+                              <button
+                                onClick={() => togglePromoSite(c.id, isPublic)}
+                                disabled={!!promoSaving}
+                                style={{ background:'transparent', border:`1px solid ${isPublic?'#bbf7d0':'rgba(0,0,0,0.12)'}`, color:isPublic?'#15803d':'#6b7280', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:promoSaving?'not-allowed':'pointer', whiteSpace:'nowrap' }}
+                              >
+                                {promoSaving===c.id+'_toggle' ? '…' : isPublic ? 'Hide from site' : 'Show on site'}
+                              </button>
+                            )}
+                            {c.active && (
+                              <button
+                                onClick={() => deactivatePromo(c.id, c.code)}
+                                disabled={!!promoSaving}
+                                style={{ background:'transparent', border:'1px solid #fecaca', color:'#dc2626', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:promoSaving?'not-allowed':'pointer' }}
+                              >
+                                {promoSaving===c.id ? 'Deactivating…' : 'Deactivate'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Info box */}
+              <div style={{ background:'#fff', border:'1px solid rgba(0,0,0,0.08)', borderRadius:'16px', padding:'20px 24px', marginTop:'16px' }}>
+                <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'14px', fontWeight:600, marginBottom:'12px', color:'#374151' }}>How promo codes work</h3>
+                <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                  {[
+                    ['🏷️','Codes are created in Stripe and validated at checkout — discounts apply automatically.'],
+                    ['🌐','"Show on site" makes the code visible on your homepage so customers can easily find and copy it.'],
+                    ['🔒','Deactivating a code prevents it from being used but keeps it in your Stripe history.'],
+                    ['📊','Stripe Dashboard has full redemption analytics for every code.'],
+                  ].map(([icon,text],i)=>(
+                    <div key={i} style={{ display:'flex', gap:'10px', fontSize:'13px', color:'#4b5563' }}>
+                      <span style={{ fontSize:'15px', flexShrink:0 }}>{icon}</span>
+                      <span style={{ lineHeight:1.6 }}>{text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </>
