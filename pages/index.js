@@ -222,55 +222,6 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
           Place your order by Saturday midnight for Wednesday collection or delivery.
         </div>
 
-        {/* Promo codes banner — only shown when there are active public codes */}
-        {promos.length > 0 && (
-          <div style={{
-            background: 'linear-gradient(135deg, #2d6b27, #3a8833)',
-            padding: '10px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            flexWrap: 'wrap',
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '12px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', flexShrink: 0 }}>
-              Current Deals
-            </span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              {promos.map(p => (
-                <button
-                  key={p.code}
-                  onClick={() => copyPromoCode(p.code)}
-                  title="Click to copy"
-                  style={{
-                    background: 'rgba(255,255,255,0.15)',
-                    border: '1px solid rgba(255,255,255,0.35)',
-                    borderRadius: '6px',
-                    padding: '5px 12px',
-                    color: '#fff',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    fontFamily: 'monospace',
-                    letterSpacing: '1px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <span>{p.code}</span>
-                  <span style={{ fontSize: '11px', fontFamily: 'sans-serif', fontWeight: 500, opacity: 0.85 }}>
-                    {p.discount.type === 'percent' ? `${p.discount.amount}% off` : `£${p.discount.amount.toFixed(2)} off`}
-                  </span>
-                  <span style={{ fontSize: '11px', fontFamily: 'sans-serif', opacity: 0.7 }}>
-                    {copiedCode === p.code ? '✓ Copied!' : 'tap to copy'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
 
         {/* Header */}
@@ -428,6 +379,59 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
                   </>
                 ) : null}
               </div>
+
+              {/* Promo codes box — same style as countdown, only shown when codes are active */}
+              {promos.length > 0 && (
+                <div style={{
+                  margin: '0 0 24px',
+                  background: 'rgba(45,107,39,0.08)',
+                  border: '1px solid rgba(45,107,39,0.2)',
+                  borderRadius: '16px',
+                  padding: '20px 24px',
+                  maxWidth: '420px',
+                }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '12px' }}>
+                    Current discount{promos.length > 1 ? 's' : ''}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {promos.map(p => (
+                      <button
+                        key={p.code}
+                        onClick={() => copyPromoCode(p.code)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          background: WHITE,
+                          border: '1px solid rgba(45,107,39,0.18)',
+                          borderRadius: '10px',
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          gap: '12px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                          textAlign: 'left',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, color: '#1a2418', letterSpacing: '1px', lineHeight: 1 }}>
+                            {p.code}
+                          </div>
+                          <div style={{ fontSize: '13px', color: GREEN, fontWeight: 500, marginTop: '4px' }}>
+                            {p.discount.type === 'percent'
+                              ? `${p.discount.amount}% off your order`
+                              : `£${p.discount.amount.toFixed(2)} off your order`}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '12px', color: GREEN, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {copiedCode === p.code ? '✓ Copied!' : 'Tap to copy →'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {!locked && (
                 <button className={styles.heroCta} onClick={scrollToMenu}>
