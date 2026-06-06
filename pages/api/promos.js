@@ -19,7 +19,7 @@ export default async function handler(req, res) {
         maxRedemptions: c.max_redemptions || null,
       }));
 
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    res.setHeader('Cache-Control', 'no-store');
     return res.json({ codes: publicCodes });
   } catch (err) {
     console.error('Promos fetch error:', err.message);
