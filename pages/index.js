@@ -26,6 +26,7 @@ const GREEN = '#2d6b27';
  *   Sun 00:00 → Tue 23:59:59  — LOCKED (orders closed)
  *
  * Cutoff is Saturday midnight. Orders reopen Wednesday morning.
+ * Delivery/collection available on Tuesday or Friday.
  */
 
 function useCountdown() {
@@ -82,7 +83,7 @@ function useCountdown() {
         setLockReason(
           isWeeklyLocked
             ? "Orders are closed while we prepare this week's batch. Reopens Wednesday."
-            : "Ordering is open until Saturday midnight."
+            : "Ordering is open until Saturday midnight. Choose Tuesday or Friday delivery."
         );
         setLockSource(isWeeklyLocked ? 'weekly' : 'open');
       }
@@ -219,7 +220,7 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
         {/* Wednesday banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
           <strong>Orders open Wednesday – Saturday.</strong>{' '}
-          Place your order by Saturday midnight for Wednesday collection or delivery.
+          Place your order by Saturday midnight for Tuesday or Friday collection or delivery.
         </div>
 
 
@@ -653,8 +654,8 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
-                <strong>Wednesdays only</strong><br />
-                Order by Saturday midnight for Wednesday collection or delivery.
+                <strong>Orders open Wed – Sat</strong><br />
+                Order by Saturday midnight for Tuesday or Friday collection or delivery.
               </p>
             </div>
           </div>

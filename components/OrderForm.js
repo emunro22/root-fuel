@@ -7,6 +7,7 @@ const ORDER_TYPES = [
 ];
 
 const COLLECTION_SLOTS = ['13:00', '16:00', '17:00'];
+const DELIVERY_DAYS = ['Tuesday', 'Friday'];
 
 // Origin: All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE
 const ORIGIN_LAT = 55.8821;
@@ -61,6 +62,9 @@ export default function OrderForm({ cart, onClose }) {
   const [form,      setForm]      = useState({ name: '', email: '', phone: '', address: '', notes: '' });
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
+
+  // Delivery day
+  const [deliveryDay, setDeliveryDay] = useState('Tuesday');
 
   // Collection slot
   const [collectionSlot, setCollectionSlot] = useState('');
@@ -193,6 +197,7 @@ export default function OrderForm({ cart, onClose }) {
           address: form.address,
           notes: form.notes,
           collectionSlot: orderType === 'pickup' ? collectionSlot : null,
+          deliveryDay,
           promotionCodeId: promoResult?.promotionCodeId || null,
           deliveryFee: orderType === 'delivery' ? (deliveryFee || 0) : 0,
         }),
@@ -236,6 +241,7 @@ export default function OrderForm({ cart, onClose }) {
                       setAddressError('');
                       setAddressDistance(null);
                       setCollectionSlot('');
+                      setDeliveryDay('Tuesday');
                     }}
                   >
                     <span className={styles.typeIcon}>{t.icon}</span>
@@ -243,6 +249,36 @@ export default function OrderForm({ cart, onClose }) {
                   </button>
                 ))}
               </div>
+              {/* Delivery day selector */}
+              <div style={{ marginTop: '14px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#3d5239', display: 'block', marginBottom: '8px' }}>
+                  {orderType === 'pickup' ? 'Collection Day *' : 'Delivery Day *'}
+                </span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {DELIVERY_DAYS.map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setDeliveryDay(day)}
+                      style={{
+                        flex: 1,
+                        padding: '12px 8px',
+                        borderRadius: '10px',
+                        border: deliveryDay === day ? '2px solid #2d6b27' : '2px solid #d4e6d0',
+                        background: deliveryDay === day ? '#2d6b27' : '#fff',
+                        color: deliveryDay === day ? '#fff' : '#3d5239',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {orderType === 'delivery' && (
                 <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
                   Delivery available within 15 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your full address below and click Check to confirm your fee.
@@ -266,7 +302,7 @@ export default function OrderForm({ cart, onClose }) {
                       All Tots Nursery<br />64 Cowdenhill Road<br />Glasgow, G13 2HE
                     </p>
                     <p style={{ fontSize: '12px', color: '#7a8f77', marginTop: '4px' }}>
-                      Ready for collection every Tuesday.
+                      Ready for collection every Tuesday and Friday.
                     </p>
                   </div>
                 </div>
@@ -406,6 +442,12 @@ export default function OrderForm({ cart, onClose }) {
                       <span>£{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
+
+                  {/* Delivery/collection day summary line */}
+                  <div className={styles.summaryRow} style={{ color: '#7a8f77' }}>
+                    <span>{orderType === 'pickup' ? 'Collection day' : 'Delivery day'}</span>
+                    <span>{deliveryDay}</span>
+                  </div>
 
                   {/* Collection slot summary line */}
                   {orderType === 'pickup' && collectionSlot && (

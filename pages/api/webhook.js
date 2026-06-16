@@ -24,7 +24,7 @@ async function buffer(readable) {
 }
 
 /* ================= CUSTOMER EMAIL ================= */
-function buildCustomerEmail({ orderId, name, items, total, orderType, address, notes, collectionSlot }) {
+function buildCustomerEmail({ orderId, name, items, total, orderType, address, notes, collectionSlot, deliveryDay }) {
   const itemRows = items.map(i => `
     <tr>
       <td style="padding:10px 0; border-bottom:1px solid #eee; color:#333;">${i.quantity}× ${i.name}</td>
@@ -33,10 +33,17 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   `).join('');
 
   const instructionsBlock = orderType === 'delivery'
-    ? `<p style="margin:15px 0 5px; color:#555;"><strong>Delivery Address:</strong><br/>${address}</p>`
+    ? `
+      <div style="margin-top:20px; padding:15px; background:#f9fcf9; border-radius:12px; border:1px solid #e1eee1;">
+        <p style="margin:0 0 10px; color:#316431; font-weight:bold; font-size:16px;">Delivery Details</p>
+        <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Delivery Day:</strong> ${deliveryDay || 'Tuesday'}</p>
+        <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Delivery Address:</strong><br/>${address}</p>
+      </div>
+    `
     : `
       <div style="margin-top:20px; padding:15px; background:#f9fcf9; border-radius:12px; border:1px solid #e1eee1;">
         <p style="margin:0 0 10px; color:#316431; font-weight:bold; font-size:16px;">Collection Details</p>
+        <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Collection Day:</strong> ${deliveryDay || 'Tuesday'}</p>
         <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Slot:</strong> ${collectionSlot || '13:00'}</p>
         <p style="margin:0 0 15px; color:#555; font-size:14px;"><strong>Address:</strong><br/>All Tots Nursery, 64 Cowdenhill Road, G13 2HE</p>
         <p style="margin:0 0 10px; font-size:13px; color:#666; line-height:1.4;">
@@ -81,7 +88,7 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
 }
 
 /* ================= OWNER EMAIL ================= */
-function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes, collectionSlot }) {
+function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType, address, notes, collectionSlot, deliveryDay }) {
   const itemRows = items.map(i => `
     <tr>
       <td style="padding:10px 0; border-bottom:1px solid #eee; color:#333;">${i.quantity}× ${i.name}</td>
@@ -101,13 +108,14 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
             <div style="background:#eef5ee; border-radius:12px; padding:20px; text-align:center; margin-bottom:25px;">
               <h2 style="margin:0; color:#316431; font-size:20px;">🛍️ New Order Received</h2>
               <p style="margin:10px 0 5px; color:#111; font-size:18px; font-weight:bold;">${orderId}</p>
-              <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()}${orderType === 'pickup' ? ` — ${collectionSlot || '13:00'}` : ''}</p>
+              <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()} — ${deliveryDay || 'Tuesday'}${orderType === 'pickup' ? ` at ${collectionSlot || '13:00'}` : ''}</p>
             </div>
             <h4 style="margin:0 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Customer Details</h4>
             <p style="margin:5px 0; font-size:14px;"><strong>Name:</strong> ${name}</p>
             <p style="margin:5px 0; font-size:14px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#316431; text-decoration:none;">${email}</a></p>
             <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone}</p>
-            ${orderType === 'delivery' ? `<p style="margin:5px 0; font-size:14px;"><strong>Address:</strong> ${address}</p>` : ''}
+            <p style="margin:5px 0; font-size:14px;"><strong>${orderType === 'delivery' ? 'Delivery' : 'Collection'} Day:</strong> ${deliveryDay || 'Tuesday'}</p>
+            ${orderType === 'delivery' ? `<p style="margin:5px 0; font-size:14px;"><strong>Address:</strong> ${address}</p>` : `<p style="margin:5px 0; font-size:14px;"><strong>Collection Slot:</strong> ${collectionSlot || '13:00'}</p>`}
             ${notes ? `<p style="margin:10px 0; font-size:14px; background:#fff9e6; padding:15px; border-radius:8px; border-left:4px solid #f3b131;"><strong>Notes:</strong> ${notes}</p>` : ''}
             <h4 style="margin:25px 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Items Ordered</h4>
             <table style="width:100%; border-collapse:collapse;">
@@ -204,6 +212,7 @@ export default async function handler(req, res) {
         address:        order.address,
         notes:          order.notes,
         collectionSlot: order.collectionSlot,
+        deliveryDay:    order.deliveryDay,
       });
       await resend.emails.send({
         from: `Root + Fuel <${FROM_CONFIRM}>`,
@@ -227,6 +236,7 @@ export default async function handler(req, res) {
         address:        order.address,
         notes:          order.notes,
         collectionSlot: order.collectionSlot,
+        deliveryDay:    order.deliveryDay,
       });
       await resend.emails.send({
         from: `Root + Fuel Orders <${FROM_ORDERS}>`,

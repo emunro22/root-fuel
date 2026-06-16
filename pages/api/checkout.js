@@ -29,11 +29,11 @@ export default async function handler(req, res) {
 
   if (isOrderingLocked()) {
     return res.status(403).json({
-      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
+      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday or Friday collection or delivery.',
     });
   }
 
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot } = req.body;
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay } = req.body;
 
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -74,6 +74,7 @@ export default async function handler(req, res) {
         deliveryFee:    fee,
         notes:          notes || '',
         collectionSlot: collectionSlot || '',
+        deliveryDay:    deliveryDay || 'Tuesday',
       },
       { ex: 60 * 60 * 24 } // 24 hours
     );

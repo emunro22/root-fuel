@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   if (isOrderingLocked()) {
     return res.status(403).json({
-      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday collection or delivery.',
+      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday or Friday collection or delivery.',
     });
   }
 
