@@ -181,7 +181,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
       if (!isAddressSufficientlyDetailed(form.address))
         return 'Please enter a full address including street number, street name, and postcode';
       if (addressValid === null) return 'Please check your delivery address using the "Check" button';
-      if (addressValid === false) return 'Your address is outside our delivery area (15 miles from Glasgow G13)';
+      if (addressValid === false) return 'Your address is outside our delivery area (10 miles from Glasgow G13)';
     }
     return null;
   };
@@ -275,13 +275,12 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                           padding: '12px 8px',
                           borderRadius: '10px',
                           border: deliveryDay === day ? '2px solid #2d6b27' : '2px solid #d4e6d0',
-                          background: deliveryDay === day ? '#2d6b27' : '#fff',
-                          color: deliveryDay === day ? '#fff' : '#3d5239',
+                          background: deliveryDay === day ? '#2d6b27' : isAvailable ? '#fff' : '#f5f5f3',
+                          color: deliveryDay === day ? '#fff' : isAvailable ? '#3d5239' : '#8a9e87',
                           fontSize: '15px',
                           fontWeight: 600,
-                          cursor: isAvailable ? 'pointer' : 'not-allowed',
+                          cursor: isAvailable ? 'pointer' : 'default',
                           transition: 'all 0.15s ease',
-                          opacity: isAvailable ? 1 : 0.4,
                         }}
                       >
                         {day}
@@ -296,7 +295,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
 
               {orderType === 'delivery' && (
                 <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                  Delivery available within 15 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your full address below and click Check to confirm your fee.
+                  Delivery available within 10 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your full address below and click Check to confirm your fee.
                 </p>
               )}
               {orderType === 'pickup' && (
