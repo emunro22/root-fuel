@@ -15,30 +15,45 @@ function getLockStatus(holidays) {
         reason: `We're closed for: ${h.label}. We'll be back shortly!`,
         source: 'holiday',
         holiday: h,
+        tuesday: { open: false },
+        friday:  { open: false },
       };
     }
   }
 
   const day = now.getDay();
-  if (day === 0 || day === 1 || day === 2) {
-    return {
-      locked: true,
-      reason: 'Ordering is closed while we fulfil this week\'s batch. Orders reopen Wednesday.',
-      source: 'weekly',
-    };
+  const tuesdayOpen = day >= 3 && day <= 6;
+  const fridayOpen  = day >= 0 && day <= 3;
+
+  const result = {
+    locked: false,
+    source: 'open',
+    tuesday: { open: tuesdayOpen },
+    friday:  { open: fridayOpen },
+  };
+
+  if (tuesdayOpen) {
+    const daysUntilSat = 6 - day;
+    const target = new Date(now);
+    target.setDate(now.getDate() + daysUntilSat);
+    target.setHours(23, 59, 59, 999);
+    result.tuesday.deadline = target.toISOString();
   }
 
-  const daysUntilSat = (6 - day + 7) % 7;
-  const target = new Date(now);
-  target.setDate(now.getDate() + daysUntilSat);
-  target.setHours(23, 59, 59, 999);
+  if (fridayOpen) {
+    const daysUntilWed = (3 - day + 7) % 7;
+    const target = new Date(now);
+    target.setDate(now.getDate() + daysUntilWed);
+    target.setHours(23, 59, 59, 999);
+    result.friday.deadline = target.toISOString();
+  }
 
-  return {
-    locked: false,
-    reason: `Ordering is open until Saturday midnight.`,
-    source: 'open',
-    deadline: target.toISOString(),
-  };
+  const parts = [];
+  if (tuesdayOpen) parts.push('Tuesday (order by Saturday midnight)');
+  if (fridayOpen)  parts.push('Friday (order by Wednesday midnight)');
+  result.reason = `Ordering is open for ${parts.join(' and ')} delivery.`;
+
+  return result;
 }
 
 export default async function handler(req, res) {

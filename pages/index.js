@@ -21,19 +21,35 @@ const WHITE = '#ffffff';
 const GREEN = '#2d6b27';
 
 /**
- * Ordering schedule:
- *   Wed 00:00 → Sat 23:59:59  — OPEN   (countdown to Saturday midnight)
- *   Sun 00:00 → Tue 23:59:59  — LOCKED (orders closed)
+ * Ordering schedule (two delivery windows):
+ *   Tuesday delivery: order Wed(3) → Sat(6) midnight
+ *   Friday  delivery: order Sun(0) → Wed(3) midnight
  *
- * Cutoff is Saturday midnight. Orders reopen Wednesday morning.
- * Delivery/collection available on Tuesday or Friday.
+ * The site is always open for at least one window (they overlap on Wednesday).
+ * Only holiday closures lock both windows.
+ *
+ * Collection slots:
+ *   Tuesday: 13:00, 16:00
+ *   Friday:  13:00
  */
 
+function computeTimeLeft(diff) {
+  return {
+    days:    Math.floor(diff / (1000 * 60 * 60 * 24)),
+    hours:   Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((diff % (1000 * 60)) / 1000),
+  };
+}
+
 function useCountdown() {
-  const [timeLeft, setTimeLeft] = useState(null);
   const [locked, setLocked] = useState(false);
   const [lockReason, setLockReason] = useState('');
   const [lockSource, setLockSource] = useState('');
+  const [tuesdayOpen, setTuesdayOpen] = useState(false);
+  const [fridayOpen, setFridayOpen] = useState(false);
+  const [tuesdayTimeLeft, setTuesdayTimeLeft] = useState(null);
+  const [fridayTimeLeft, setFridayTimeLeft] = useState(null);
 
   useEffect(() => {
     let intervalId;
@@ -46,46 +62,45 @@ function useCountdown() {
         setLocked(data.locked);
         setLockReason(data.reason || '');
         setLockSource(data.source || '');
-
-        if (data.locked || !data.deadline) {
-          setTimeLeft(null);
-          return;
-        }
+        setTuesdayOpen(data.tuesday?.open || false);
+        setFridayOpen(data.friday?.open || false);
 
         clearInterval(intervalId);
 
-        const deadline = new Date(data.deadline);
+        if (data.locked) {
+          setTuesdayTimeLeft(null);
+          setFridayTimeLeft(null);
+          return;
+        }
+
+        const tueDl = data.tuesday?.deadline ? new Date(data.tuesday.deadline) : null;
+        const friDl = data.friday?.deadline  ? new Date(data.friday.deadline)  : null;
 
         const tick = () => {
-          const diff = deadline - new Date();
-
-          if (diff <= 0) {
-            fetchStatus();
-            return;
+          const now = new Date();
+          if (tueDl) {
+            const diff = tueDl - now;
+            if (diff <= 0) { fetchStatus(); return; }
+            setTuesdayTimeLeft(computeTimeLeft(diff));
+          } else {
+            setTuesdayTimeLeft(null);
           }
-
-          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-          setTimeLeft({ days, hours, minutes, seconds });
+          if (friDl) {
+            const diff = friDl - now;
+            if (diff <= 0) { fetchStatus(); return; }
+            setFridayTimeLeft(computeTimeLeft(diff));
+          } else {
+            setFridayTimeLeft(null);
+          }
         };
 
         tick();
         intervalId = setInterval(tick, 1000);
-
       } catch {
         const day = new Date().getDay();
-        const isWeeklyLocked = day === 0 || day === 1 || day === 2;
-
-        setLocked(isWeeklyLocked);
-        setLockReason(
-          isWeeklyLocked
-            ? "Orders are closed while we prepare this week's batch. Reopens Wednesday."
-            : "Ordering is open until Saturday midnight. Choose Tuesday or Friday delivery."
-        );
-        setLockSource(isWeeklyLocked ? 'weekly' : 'open');
+        setLocked(false);
+        setTuesdayOpen(day >= 3 && day <= 6);
+        setFridayOpen(day >= 0 && day <= 3);
       }
     }
 
@@ -98,7 +113,7 @@ function useCountdown() {
     };
   }, []);
 
-  return { timeLeft, locked, lockReason, lockSource };
+  return { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft, fridayTimeLeft };
 }
 
 export default function Home() {
@@ -114,7 +129,7 @@ export default function Home() {
   const [promos,         setPromos]         = useState([]);
   const [copiedCode,     setCopiedCode]     = useState('');
 
-const { timeLeft, locked, lockReason, lockSource } = useCountdown();
+const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft, fridayTimeLeft } = useCountdown();
 
   // ── Hero food image carousel ──────────────────────────────────────────────
   // Add your food photo filenames to /public/food/ and list them here.
@@ -217,10 +232,10 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
       </Head>
       <div style={{ background: CREAM, minHeight: '100vh', color: '#1a2418' }}>
 
-        {/* Wednesday banner */}
+        {/* Delivery banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
-          <strong>Orders open Wednesday – Saturday.</strong>{' '}
-          Place your order by Saturday midnight for Tuesday or Friday collection or delivery.
+          <strong>Two delivery days every week.</strong>{' '}
+          Tuesday (order Wed–Sat) · Friday (order Sun–Wed).
         </div>
 
 
@@ -332,53 +347,121 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
                 Locally sourced, whole food focussed, created for those who demand more from what they eat  
               </p>
 
-              {/* Countdown Timer */}
-              <div style={{
-                margin: '28px 0 24px',
-                background: locked ? 'rgba(180,30,30,0.08)' : 'rgba(45,107,39,0.08)',
-                border: `1px solid ${locked ? 'rgba(180,30,30,0.2)' : 'rgba(45,107,39,0.2)'}`,
-                borderRadius: '16px',
-                padding: '20px 24px',
-                maxWidth: '420px',
-              }}>
+              {/* Countdown Timers */}
+              <div style={{ margin: '28px 0 24px', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {locked ? (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#b41e1e', marginBottom: '6px' }}>
-                      {lockSource === 'holiday' ? 'Holiday Closure' : 'Orders Closed'}
+                  <div style={{
+                    background: 'rgba(180,30,30,0.08)',
+                    border: '1px solid rgba(180,30,30,0.2)',
+                    borderRadius: '16px',
+                    padding: '20px 24px',
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#b41e1e', marginBottom: '6px' }}>
+                        {lockSource === 'holiday' ? 'Holiday Closure' : 'Orders Closed'}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
+                        {lockReason}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
-                      {lockReason}
-                    </div>                  </div>
-                ) : timeLeft ? (
+                  </div>
+                ) : (
                   <>
-                    <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '12px' }}>
-                      Order deadline — Saturday midnight
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      {[
-                        { val: timeLeft.days,    label: 'Days' },
-                        { val: timeLeft.hours,   label: 'Hrs' },
-                        { val: timeLeft.minutes, label: 'Min' },
-                        { val: timeLeft.seconds, label: 'Sec' },
-                      ].map((t, i) => (
-                        <div key={i} style={{ textAlign: 'center', flex: 1 }}>
-                          <div style={{
-                            background: WHITE,
-                            borderRadius: '10px',
-                            padding: '10px 4px 8px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                            fontFamily: 'monospace',
-                            fontSize: 'clamp(22px, 4vw, 32px)',
-                            fontWeight: 700,
-                            color: '#1a2418',
-                            lineHeight: 1,
-                          }}>{pad(t.val)}</div>
-                          <div style={{ fontSize: '10px', color: '#8a9e87', marginTop: '5px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
+                    {/* Tuesday delivery countdown */}
+                    {tuesdayOpen && tuesdayTimeLeft ? (
+                      <div style={{
+                        background: 'rgba(45,107,39,0.08)',
+                        border: '1px solid rgba(45,107,39,0.2)',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                      }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
+                          Tuesday delivery — order by Saturday midnight
                         </div>
-                      ))}
-                    </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {[
+                            { val: tuesdayTimeLeft.days,    label: 'Days' },
+                            { val: tuesdayTimeLeft.hours,   label: 'Hrs' },
+                            { val: tuesdayTimeLeft.minutes, label: 'Min' },
+                            { val: tuesdayTimeLeft.seconds, label: 'Sec' },
+                          ].map((t, i) => (
+                            <div key={i} style={{ textAlign: 'center', flex: 1 }}>
+                              <div style={{
+                                background: WHITE,
+                                borderRadius: '10px',
+                                padding: '8px 4px 6px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                                fontFamily: 'monospace',
+                                fontSize: 'clamp(18px, 3.5vw, 26px)',
+                                fontWeight: 700,
+                                color: '#1a2418',
+                                lineHeight: 1,
+                              }}>{pad(t.val)}</div>
+                              <div style={{ fontSize: '9px', color: '#8a9e87', marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : !tuesdayOpen ? (
+                      <div style={{
+                        background: 'rgba(0,0,0,0.03)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        textAlign: 'center',
+                      }}>
+                        <span style={{ fontSize: '12px', color: '#8a9e87' }}>Tuesday delivery — ordering opens Wednesday</span>
+                      </div>
+                    ) : null}
+
+                    {/* Friday delivery countdown */}
+                    {fridayOpen && fridayTimeLeft ? (
+                      <div style={{
+                        background: 'rgba(45,107,39,0.08)',
+                        border: '1px solid rgba(45,107,39,0.2)',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                      }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
+                          Friday delivery — order by Wednesday midnight
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {[
+                            { val: fridayTimeLeft.days,    label: 'Days' },
+                            { val: fridayTimeLeft.hours,   label: 'Hrs' },
+                            { val: fridayTimeLeft.minutes, label: 'Min' },
+                            { val: fridayTimeLeft.seconds, label: 'Sec' },
+                          ].map((t, i) => (
+                            <div key={i} style={{ textAlign: 'center', flex: 1 }}>
+                              <div style={{
+                                background: WHITE,
+                                borderRadius: '10px',
+                                padding: '8px 4px 6px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                                fontFamily: 'monospace',
+                                fontSize: 'clamp(18px, 3.5vw, 26px)',
+                                fontWeight: 700,
+                                color: '#1a2418',
+                                lineHeight: 1,
+                              }}>{pad(t.val)}</div>
+                              <div style={{ fontSize: '9px', color: '#8a9e87', marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : !fridayOpen ? (
+                      <div style={{
+                        background: 'rgba(0,0,0,0.03)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        textAlign: 'center',
+                      }}>
+                        <span style={{ fontSize: '12px', color: '#8a9e87' }}>Friday delivery — ordering opens Sunday</span>
+                      </div>
+                    ) : null}
                   </>
-                ) : null}
+                )}
               </div>
 
               {/* Promo codes box — same style as countdown, only shown when codes are active */}
@@ -585,7 +668,7 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
         )}
 
         {showCart  && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
-        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} />}
+        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} tuesdayOpen={tuesdayOpen} fridayOpen={fridayOpen} />}
         {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
 
         {/* Catering Banner */}
@@ -654,8 +737,8 @@ const { timeLeft, locked, lockReason, lockSource } = useCountdown();
             <div className={styles.footerCol}>
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
-                <strong>Orders open Wed – Sat</strong><br />
-                Order by Saturday midnight for Tuesday or Friday collection or delivery.
+                <strong>Two delivery days</strong><br />
+                Tuesday (order Wed–Sat) · Friday (order Sun–Wed).
               </p>
             </div>
           </div>

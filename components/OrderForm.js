@@ -6,8 +6,8 @@ const ORDER_TYPES = [
   { id: 'delivery', label: 'Delivery',    icon: '🚴' },
 ];
 
-const COLLECTION_SLOTS = ['13:00', '16:00', '17:00'];
-const DELIVERY_DAYS = ['Tuesday', 'Friday'];
+const TUESDAY_SLOTS = ['13:00', '16:00'];
+const FRIDAY_SLOTS  = ['13:00'];
 
 // Origin: All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE
 const ORIGIN_LAT = 55.8821;
@@ -57,14 +57,19 @@ function isAddressSufficientlyDetailed(address) {
   return hasNumber && hasText && hasPostcode;
 }
 
-export default function OrderForm({ cart, onClose }) {
+export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
+  const availableDays = [];
+  if (tuesdayOpen) availableDays.push('Tuesday');
+  if (fridayOpen)  availableDays.push('Friday');
+
   const [orderType, setOrderType] = useState('pickup');
   const [form,      setForm]      = useState({ name: '', email: '', phone: '', address: '', notes: '' });
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
-  // Delivery day
-  const [deliveryDay, setDeliveryDay] = useState('Tuesday');
+  // Delivery day — default to first available
+  const [deliveryDay, setDeliveryDay] = useState(availableDays[0] || 'Tuesday');
+  const collectionSlots = deliveryDay === 'Friday' ? FRIDAY_SLOTS : TUESDAY_SLOTS;
 
   // Collection slot
   const [collectionSlot, setCollectionSlot] = useState('');
@@ -241,7 +246,7 @@ export default function OrderForm({ cart, onClose }) {
                       setAddressError('');
                       setAddressDistance(null);
                       setCollectionSlot('');
-                      setDeliveryDay('Tuesday');
+                      setDeliveryDay(availableDays[0] || 'Tuesday');
                     }}
                   >
                     <span className={styles.typeIcon}>{t.icon}</span>
@@ -255,27 +260,35 @@ export default function OrderForm({ cart, onClose }) {
                   {orderType === 'pickup' ? 'Collection Day *' : 'Delivery Day *'}
                 </span>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  {DELIVERY_DAYS.map(day => (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => setDeliveryDay(day)}
-                      style={{
-                        flex: 1,
-                        padding: '12px 8px',
-                        borderRadius: '10px',
-                        border: deliveryDay === day ? '2px solid #2d6b27' : '2px solid #d4e6d0',
-                        background: deliveryDay === day ? '#2d6b27' : '#fff',
-                        color: deliveryDay === day ? '#fff' : '#3d5239',
-                        fontSize: '15px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {day}
-                    </button>
-                  ))}
+                  {['Tuesday', 'Friday'].map(day => {
+                    const isAvailable = availableDays.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        disabled={!isAvailable}
+                        onClick={() => { setDeliveryDay(day); setCollectionSlot(''); }}
+                        style={{
+                          flex: 1,
+                          padding: '12px 8px',
+                          borderRadius: '10px',
+                          border: deliveryDay === day ? '2px solid #2d6b27' : '2px solid #d4e6d0',
+                          background: deliveryDay === day ? '#2d6b27' : '#fff',
+                          color: deliveryDay === day ? '#fff' : '#3d5239',
+                          fontSize: '15px',
+                          fontWeight: 600,
+                          cursor: isAvailable ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.15s ease',
+                          opacity: isAvailable ? 1 : 0.4,
+                        }}
+                      >
+                        {day}
+                        {!isAvailable && <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, marginTop: '2px' }}>
+                          {day === 'Tuesday' ? 'Opens Wednesday' : 'Opens Sunday'}
+                        </span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -316,10 +329,12 @@ export default function OrderForm({ cart, onClose }) {
                 <div className={styles.section}>
                   <span className={styles.sectionLabel}>Collection Time Slot *</span>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                    Food is made to order — please do not arrive before your chosen slot.
+                    {collectionSlots.length === 1
+                      ? 'Friday collection is at 13:00 only.'
+                      : 'Food is made to order — please do not arrive before your chosen slot.'}
                   </p>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    {COLLECTION_SLOTS.map(slot => (
+                    {collectionSlots.map(slot => (
                       <button
                         key={slot}
                         type="button"

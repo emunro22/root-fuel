@@ -4,7 +4,7 @@ import { appendOrder } from '../../lib/sheets';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-function isOrderingLocked() {
+function isOrderingLocked(deliveryDay) {
   const now = new Date();
   const ukParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
@@ -18,6 +18,13 @@ function isOrderingLocked() {
   const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
   const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
+
+  if (deliveryDay === 'Friday') {
+    if (day === 'Thu' || day === 'Fri' || day === 'Sat') return true;
+    if (day === 'Wed' && hour === 23 && min === 59 && sec === 59) return true;
+    return false;
+  }
+
   if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
   if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
   return false;
@@ -25,13 +32,14 @@ function isOrderingLocked() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  if (isOrderingLocked()) {
-    return res.status(403).json({
-      error: 'Ordering is currently closed. Orders are accepted Wednesday through Saturday midnight for Tuesday or Friday collection or delivery.',
-    });
-  }
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay } = req.body;
 
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot } = req.body;
+  if (isOrderingLocked(deliveryDay || 'Tuesday')) {
+    const msg = deliveryDay === 'Friday'
+      ? 'Friday delivery ordering is closed. Orders for Friday are accepted Sunday through Wednesday midnight.'
+      : 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.';
+    return res.status(403).json({ error: msg });
+  }
 
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
