@@ -168,6 +168,8 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
   };
 
   const validate = () => {
+    if (!availableDays.includes(deliveryDay))
+      return `${deliveryDay} ordering is now closed. Please select a different delivery day.`;
     if (!form.name.trim())                                return 'Please enter your name';
     if (!form.email.trim() || !form.email.includes('@'))  return 'Please enter a valid email';
     if (!form.phone.trim())                               return 'Please enter your phone number';
