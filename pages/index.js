@@ -118,7 +118,16 @@ function useCountdown() {
 
 export default function Home() {
   const [menu,           setMenu]           = useState([]);
-  const [cart,           setCart]           = useState([]);
+  const [cart,           setCart]           = useState(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('rf_cart');
+      if (!saved) return [];
+      const { items, ts } = JSON.parse(saved);
+      if (Date.now() - ts > 7 * 24 * 60 * 60 * 1000) return [];
+      return Array.isArray(items) ? items : [];
+    } catch { return []; }
+  });
   const [loading,        setLoading]        = useState(true);
   const [activeCategory, setActiveCategory] = useState('Mains');
   const [showCart,       setShowCart]       = useState(false);
@@ -153,6 +162,16 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
     }, 3500);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    try {
+      if (cart.length > 0) {
+        localStorage.setItem('rf_cart', JSON.stringify({ items: cart, ts: Date.now() }));
+      } else {
+        localStorage.removeItem('rf_cart');
+      }
+    } catch {}
+  }, [cart]);
 
   useEffect(() => {
     fetch('/api/menu')
