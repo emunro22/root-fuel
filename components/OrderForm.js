@@ -285,7 +285,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                       >
                         {day}
                         {!isAvailable && <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, marginTop: '2px' }}>
-                          {day === 'Tuesday' ? 'Opens Wednesday' : 'Opens Sunday'}
+                          {day === 'Tuesday' ? 'Opens Wednesday' : 'Opens Saturday'}
                         </span>}
                       </button>
                     );

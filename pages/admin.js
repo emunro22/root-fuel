@@ -974,11 +974,11 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
         body: JSON.stringify({ filename: file.name, contentType: file.type, data: base64 }),
       });
-      if (!res.ok) throw new Error('Upload failed');
-      const { url } = await res.json();
-      set('image', url);
-    } catch {
-      setUploadError('Upload failed. Please try again.');
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Upload failed');
+      set('image', result.url);
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

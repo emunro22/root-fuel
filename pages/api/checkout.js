@@ -21,9 +21,9 @@ function isOrderingLocked(deliveryDay) {
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
 
   if (deliveryDay === 'Friday') {
-    // Friday delivery: open Sun → Wed midnight
-    if (day === 'Thu' || day === 'Fri' || day === 'Sat') return true;
-    if (day === 'Wed' && hour === 23 && min === 59 && sec === 59) return true;
+    // Friday delivery: open Sat → Tue midnight
+    if (day === 'Wed' || day === 'Thu' || day === 'Fri') return true;
+    if (day === 'Tue' && hour === 23 && min === 59 && sec === 59) return true;
     return false;
   }
 
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
   if (isOrderingLocked(deliveryDay || 'Tuesday')) {
     const msg = deliveryDay === 'Friday'
-      ? 'Friday delivery ordering is closed. Orders for Friday are accepted Sunday through Wednesday midnight.'
+      ? 'Friday delivery ordering is closed. Orders for Friday are accepted Saturday through Tuesday midnight.'
       : 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.';
     return res.status(403).json({ error: msg });
   }

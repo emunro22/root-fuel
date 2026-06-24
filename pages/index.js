@@ -23,7 +23,7 @@ const GREEN = '#2d6b27';
 /**
  * Ordering schedule (two delivery windows):
  *   Tuesday delivery: order Wed(3) → Sat(6) midnight
- *   Friday  delivery: order Sun(0) → Wed(3) midnight
+ *   Friday  delivery: order Sat(6) → Tue(2) midnight
  *
  * The site is always open for at least one window (they overlap on Wednesday).
  * Only holiday closures lock both windows.
@@ -100,7 +100,7 @@ function useCountdown() {
         const day = new Date().getDay();
         setLocked(false);
         setTuesdayOpen(day >= 3 && day <= 6);
-        setFridayOpen(day >= 0 && day <= 3);
+        setFridayOpen(day === 6 || day <= 2);
       }
     }
 
@@ -254,7 +254,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         {/* Delivery banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
           <strong>Two delivery days every week.</strong>{' '}
-          Tuesday (order Wed–Sat) · Friday (order Sun–Wed).
+          Tuesday (order Wed–Sat) · Friday (order Sat–Tue).
         </div>
 
 
@@ -442,7 +442,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                         padding: '16px 20px',
                       }}>
                         <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
-                          Friday delivery — order by Wednesday midnight
+                          Friday delivery — order by Tuesday midnight
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           {[
@@ -476,7 +476,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                         padding: '12px 16px',
                         textAlign: 'center',
                       }}>
-                        <span style={{ fontSize: '12px', color: '#8a9e87' }}>Friday delivery — ordering opens Sunday</span>
+                        <span style={{ fontSize: '12px', color: '#8a9e87' }}>Friday delivery — ordering opens Saturday</span>
                       </div>
                     ) : null}
                   </>
@@ -757,7 +757,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
                 <strong>Two delivery days</strong><br />
-                Tuesday (order Wed–Sat) · Friday (order Sun–Wed).
+                Tuesday (order Wed–Sat) · Friday (order Sat–Tue).
               </p>
             </div>
           </div>

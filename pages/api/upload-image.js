@@ -34,8 +34,9 @@ export default async function handler(req, res) {
       });
       return res.status(200).json({ url: blob.url });
     } catch (e) {
-      console.error('[upload-image] PUT error:', e);
-      return res.status(500).json({ error: 'Upload failed' });
+      console.error('[upload-image] PUT error:', e.message, e);
+      const detail = e.message || 'Unknown error';
+      return res.status(500).json({ error: `Upload failed: ${detail}` });
     }
   }
 
