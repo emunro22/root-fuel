@@ -953,26 +953,44 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
 
   const set = (field, val) => onChange(prev => ({ ...prev, [field]: val }));
 
+  const compressImage = (file, maxDim = 1200, quality = 0.82) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl.split(',')[1]);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => { URL.revokeObjectURL(img.src); resolve(null); };
+      img.src = URL.createObjectURL(file);
+    });
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      setUploadError('Image must be under 8 MB.');
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('Image must be under 20 MB.');
       return;
     }
     setUploadError('');
     setUploading(true);
     try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const base64 = await compressImage(file);
+      if (!base64) throw new Error('Could not read image');
       const res = await fetch('/api/upload-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
-        body: JSON.stringify({ filename: file.name, contentType: file.type, data: base64 }),
+        body: JSON.stringify({ filename: file.name, contentType: 'image/jpeg', data: base64 }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Upload failed');
@@ -1069,7 +1087,7 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
               <>
                 <p style={{ fontSize:'22px', marginBottom:'6px' }}>📷</p>
                 <p style={{ fontSize:'13px', fontWeight:500, color:'#374151', marginBottom:'3px' }}>Click to upload an image</p>
-                <p style={{ fontSize:'12px', color:'#9ca3af' }}>JPG, PNG, WebP · max 8 MB</p>
+                <p style={{ fontSize:'12px', color:'#9ca3af' }}>JPG, PNG, WebP · auto-compressed</p>
               </>
             )}
           </div>
