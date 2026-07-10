@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { kv } from '@vercel/kv';
 import { appendOrder } from '../../lib/sheets';
 import { Resend } from 'resend';
+import { nextDeliveryDate } from '../../lib/reviewFollowup';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const resend  = new Resend(process.env.RESEND_API_KEY);
@@ -245,6 +246,19 @@ export default async function handler(req, res) {
       });
     } catch (e) {
       console.error('[webhook] Owner email error:', e.message);
+    }
+
+    /* Queue "how did we do" review follow-up for delivery orders */
+    if (orderType === 'delivery') {
+      try {
+        const deliveryDate = nextDeliveryDate(order.deliveryDay);
+        const followupTtl = 60 * 60 * 24 * 21; // 21 days — safety net if cron is ever missed
+        await kv.set(`review_order:${orderId}`, { name: order.name, email: order.email }, { ex: followupTtl });
+        await kv.lpush(`review_followups:${deliveryDate}`, orderId);
+        await kv.expire(`review_followups:${deliveryDate}`, followupTtl);
+      } catch (e) {
+        console.error('[webhook] Failed to queue review follow-up:', e.message);
+      }
     }
 
     // ── Clean up KV now that order is confirmed and emailed ───────────────

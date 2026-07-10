@@ -2,6 +2,15 @@
   "functions": {
     "pages/api/webhook.js": {
       "maxDuration": 10
+    },
+    "pages/api/cron/send-review-emails.js": {
+      "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/send-review-emails",
+      "schedule": "0 18 * * *"
+    }
+  ]
 }
