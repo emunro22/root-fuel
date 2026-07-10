@@ -11,7 +11,6 @@ const resend  = new Resend(process.env.RESEND_API_KEY);
 const FROM_ORDERS  = 'orders@rootandfuelltd.com';
 const FROM_CONFIRM = 'order-confirmation@rootandfuelltd.com';
 const OWNER_EMAIL  = 'samanthahamilton@rootandfuelltd.com';
-const DEV_EMAIL    = 'euanmunroo@gmail.com';
 
 export const config = { api: { bodyParser: false } };
 
@@ -241,7 +240,7 @@ export default async function handler(req, res) {
       });
       await resend.emails.send({
         from: `Root + Fuel Orders <${FROM_ORDERS}>`,
-        to:   [OWNER_EMAIL, DEV_EMAIL],
+        to:   OWNER_EMAIL,
         ...owner,
       });
     } catch (e) {
