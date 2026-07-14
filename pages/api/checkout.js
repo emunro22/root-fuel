@@ -5,6 +5,9 @@ import { kv } from '@vercel/kv';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+const MIN_MILES_FOR_MINIMUM_ORDER = 5;
+const MINIMUM_ORDER_BEYOND_5_MILES = 30.00;
+
 function isOrderingLocked(deliveryDay) {
   const now = new Date();
   const ukParts = new Intl.DateTimeFormat('en-GB', {
@@ -36,7 +39,7 @@ function isOrderingLocked(deliveryDay) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay } = req.body;
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay, distanceMiles } = req.body;
 
   if (isOrderingLocked(deliveryDay || 'Tuesday')) {
     const msg = deliveryDay === 'Friday'
@@ -47,6 +50,13 @@ export default async function handler(req, res) {
 
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  if (orderType === 'delivery' && distanceMiles != null && distanceMiles > MIN_MILES_FOR_MINIMUM_ORDER) {
+    const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    if (itemsTotal < MINIMUM_ORDER_BEYOND_5_MILES) {
+      return res.status(400).json({ error: `A minimum order of £${MINIMUM_ORDER_BEYOND_5_MILES.toFixed(2)} is required for delivery beyond ${MIN_MILES_FOR_MINIMUM_ORDER} miles.` });
+    }
   }
 
   // ── Collection override check ─────────────────────────────────────────────

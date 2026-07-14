@@ -15,12 +15,17 @@ const ORIGIN_LNG = -4.3714;
 const MAX_MILES  = 10;
 
 // Distance-based delivery pricing
-// ≤ 3 miles  → £3.00 (local: Knightswood, Drumchapel, Yoker etc.)
-// 3–15 miles → £5.00 (Faifley, Milngavie, Old Kilpatrick, Bowling, Bishopton etc.)
+// ≤ 3 miles → £3.00 (local: Knightswood, Drumchapel, Yoker etc.)
+// 3–5 miles → £5.00 (Faifley, Milngavie, Old Kilpatrick, Bowling, Bishopton etc.)
+// 5–10 miles → £7.00, minimum order £30
 function getDeliveryFee(miles) {
   if (miles <= 3) return 3.00;
-  return 5.00;
+  if (miles <= 5) return 5.00;
+  return 7.00;
 }
+
+const MIN_MILES_FOR_MINIMUM_ORDER = 5;
+const MINIMUM_ORDER_BEYOND_5_MILES = 30.00;
 
 function toRad(deg) { return deg * Math.PI / 180; }
 
@@ -90,6 +95,10 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
   const cartSubtotal  = cart.reduce((s, i) => s + i.price * i.quantity, 0);
   const appliedFee    = orderType === 'delivery' && deliveryFee !== null ? deliveryFee : 0;
   const cartTotal     = cartSubtotal + appliedFee;
+
+  // Orders delivered beyond 5 miles need a £30 minimum subtotal
+  const requiresMinimumOrder = orderType === 'delivery' && addressValid === true && addressDistance !== null && addressDistance > MIN_MILES_FOR_MINIMUM_ORDER;
+  const minimumOrderMet      = !requiresMinimumOrder || cartSubtotal >= MINIMUM_ORDER_BEYOND_5_MILES;
 
   const discountAmount = promoResult
     ? promoResult.discount.type === 'percent'
@@ -182,6 +191,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
         return 'Please enter a full address including street number, street name, and postcode';
       if (addressValid === null) return 'Please check your delivery address using the "Check" button';
       if (addressValid === false) return 'Your address is outside our delivery area (10 miles from Glasgow G13)';
+      if (!minimumOrderMet) return `A minimum order of £${MINIMUM_ORDER_BEYOND_5_MILES.toFixed(2)} is required for delivery beyond ${MIN_MILES_FOR_MINIMUM_ORDER} miles. Please add more items to your order.`;
     }
     return null;
   };
@@ -207,6 +217,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
           deliveryDay,
           promotionCodeId: promoResult?.promotionCodeId || null,
           deliveryFee: orderType === 'delivery' ? (deliveryFee || 0) : 0,
+          distanceMiles: orderType === 'delivery' ? addressDistance : null,
         }),
       });
       const data = await res.json();
@@ -295,7 +306,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
 
               {orderType === 'delivery' && (
                 <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                  Delivery available within 10 miles. <strong style={{ color: '#3d5239' }}>Local areas £3.00 · Further afield £5.00.</strong> Enter your full address below and click Check to confirm your fee.
+                  Delivery available within 10 miles. <strong style={{ color: '#3d5239' }}>Up to 3 miles £3.00 · 3–5 miles £5.00 · 5–10 miles £7.00 (£30 minimum order).</strong> Enter your full address below and click Check to confirm your fee.
                 </p>
               )}
               {orderType === 'pickup' && (
@@ -439,6 +450,11 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                           ✓ Address confirmed — {addressDistance.toFixed(1)} miles away. Delivery fee: <strong>£{deliveryFee.toFixed(2)}</strong>
                         </p>
                       )}
+                      {requiresMinimumOrder && !minimumOrderMet && (
+                        <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#b41e1e', lineHeight: 1.4 }}>
+                          Orders delivered beyond {MIN_MILES_FOR_MINIMUM_ORDER} miles need a £{MINIMUM_ORDER_BEYOND_5_MILES.toFixed(2)} minimum order. Your subtotal is £{cartSubtotal.toFixed(2)} — add £{(MINIMUM_ORDER_BEYOND_5_MILES - cartSubtotal).toFixed(2)} more to qualify.
+                        </p>
+                      )}
                     </div>
                   )}
                   <div className={`${styles.field} ${styles.fullWidth}`}>
@@ -563,7 +579,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
 
               {error && <div className={styles.error}>{error}</div>}
 
-              <button type="submit" className={styles.submitBtn} disabled={loading}>
+              <button type="submit" className={styles.submitBtn} disabled={loading || !minimumOrderMet}>
                 {loading ? (
                   <><span className={styles.spinner} /> Redirecting to payment…</>
                 ) : (

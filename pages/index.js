@@ -228,12 +228,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
   // Items with no delivery day assigned stay visible every day (keeps legacy
-  // items showing until an admin assigns them). Tagged items only show while
-  // their delivery window is open, so the menu switches automatically as
-  // Tuesday's/Friday's ordering windows open and close.
+  // items showing until an admin assigns them). Tagged items only show for
+  // one active delivery day at a time — the two ordering windows overlap on
+  // Saturday, and Tuesday's menu takes priority that day.
+  const activeMenuDay = tuesdayOpen ? 'tuesday' : fridayOpen ? 'friday' : null;
   const visibleMenu = menu.filter(i => {
     if (!i.days || i.days.length === 0) return true;
-    return (tuesdayOpen && i.days.includes('tuesday')) || (fridayOpen && i.days.includes('friday'));
+    return activeMenuDay ? i.days.includes(activeMenuDay) : false;
   });
   const categoryItems = visibleMenu.filter(i => i.category === activeCategory);
   const availableCategories = CATEGORIES.filter(cat => visibleMenu.some(i => i.category === cat.name));
