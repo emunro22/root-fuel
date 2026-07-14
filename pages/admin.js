@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 
-const MS_BLUE = '#2563EB';
-const MS_DARK = '#0a0a0a';
+const RF_GREEN = '#2d6b27';
+const RF_DARK = '#1a2418';
 
 const VALID_CATEGORIES = [
   'Starters', 'Mains', 'Desserts', 'Overnight Oats',
   'Poke Bowls', 'Grab & Go', 'Specials',
 ];
 
-const EMPTY_ITEM = { category: 'Mains', name: '', description: '', price: '', image: '', available: true };
+const EMPTY_ITEM = { category: 'Mains', name: '', description: '', price: '', image: '', available: true, days: [] };
 
 export default function AdminPage() {
   const [authed,      setAuthed]      = useState(false);
@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [menuItems,    setMenuItems]    = useState([]);
   const [menuLoading,  setMenuLoading]  = useState(false);
   const [menuFilter,   setMenuFilter]   = useState('All');
+  const [menuDayFilter, setMenuDayFilter] = useState('All'); // 'All' | 'tuesday' | 'friday' | 'unassigned'
   const [editingItem,  setEditingItem]  = useState(null);  // item being edited (includes rowNumber)
   const [showAddForm,  setShowAddForm]  = useState(false);
   const [newItem,      setNewItem]      = useState(EMPTY_ITEM);
@@ -278,6 +279,27 @@ export default function AdminPage() {
     finally { setMenuSaving(''); }
   };
 
+  const toggleDay = async (item, day) => {
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    const currentDays = item.days || [];
+    const nextDays = currentDays.includes(day) ? currentDays.filter(d => d !== day) : [...currentDays, day];
+    setMenuSaving(item.rowNumber);
+    try {
+      const res = await fetch('/api/menu-admin', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ ...item, days: nextDays }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMenuItems(data.items || []);
+        const dayLabel = day === 'tuesday' ? 'Tuesday' : 'Friday';
+        showToast(`"${item.name}" ${nextDays.includes(day) ? `added to ${dayLabel} delivery` : `removed from ${dayLabel} delivery`}.`);
+      } else { showToast('Failed to update.', true); }
+    } catch { showToast('Network error.', true); }
+    finally { setMenuSaving(''); }
+  };
+
   const deleteMenuItem = async (item) => {
     if (!confirm(`Delete "${item.name}" from the menu? This cannot be undone.`)) return;
     const pw = sessionStorage.getItem('rf_admin_pw') || password;
@@ -378,9 +400,13 @@ export default function AdminPage() {
   });
   const today = new Date().toISOString().split('T')[0];
 
-  const filteredMenu = menuFilter === 'All'
-    ? menuItems
-    : menuItems.filter(i => i.category === menuFilter);
+  const filteredMenu = menuItems
+    .filter(i => menuFilter === 'All' || i.category === menuFilter)
+    .filter(i => {
+      if (menuDayFilter === 'All') return true;
+      if (menuDayFilter === 'unassigned') return !i.days || i.days.length === 0;
+      return (i.days || []).includes(menuDayFilter);
+    });
 
   // ── Login screen ──────────────────────────────────────────────────────────
   if (!authed) {
@@ -391,12 +417,12 @@ export default function AdminPage() {
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
         </Head>
-        <div style={{ minHeight:'100vh', background:MS_DARK, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans', sans-serif", padding:'24px' }}>
+        <div style={{ minHeight:'100vh', background:RF_DARK, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans', sans-serif", padding:'24px' }}>
           <div style={{ marginBottom:'40px', textAlign:'center' }}>
-            <img src="/ms-logo.png" alt="Munro Studio" style={{ height:'52px', marginBottom:'12px' }} />
+            <img src="/logo.png" alt="Root + Fuel" style={{ height:'52px', marginBottom:'12px' }} />
             <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', letterSpacing:'2px', textTransform:'uppercase' }}>Site Management</p>
           </div>
-          <div style={{ background:'#111', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'40px', width:'100%', maxWidth:'400px' }}>
+          <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'40px', width:'100%', maxWidth:'400px' }}>
             <h1 style={{ fontFamily:"'Space Grotesk', sans-serif", color:'#fff', fontSize:'22px', fontWeight:600, marginBottom:'6px' }}>Root + Fuel Admin</h1>
             <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'14px', marginBottom:'32px' }}>Holiday & menu management</p>
             <form onSubmit={handleAuth}>
@@ -407,14 +433,11 @@ export default function AdminPage() {
                 style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:`1px solid ${authError?'#ef4444':'rgba(255,255,255,0.1)'}`, borderRadius:'10px', padding:'13px 16px', color:'#fff', fontSize:'15px', fontFamily:'inherit', outline:'none', marginBottom:authError?'8px':'24px', boxSizing:'border-box' }}
               />
               {authError && <p style={{ color:'#ef4444', fontSize:'13px', marginBottom:'16px' }}>{authError}</p>}
-              <button type="submit" disabled={authLoading||!password} style={{ width:'100%', background:authLoading?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'14px', fontSize:'15px', fontWeight:600, fontFamily:'inherit', cursor:authLoading||!password?'not-allowed':'pointer' }}>
+              <button type="submit" disabled={authLoading||!password} style={{ width:'100%', background:authLoading?'rgba(45,107,39,0.5)':RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'14px', fontSize:'15px', fontWeight:600, fontFamily:'inherit', cursor:authLoading||!password?'not-allowed':'pointer' }}>
                 {authLoading?'Signing in…':'Sign In →'}
               </button>
             </form>
           </div>
-          <p style={{ color:'rgba(255,255,255,0.15)', fontSize:'12px', marginTop:'32px' }}>
-            Powered by <span style={{ color:MS_BLUE }}>Munro Studio</span> · munrostudio.co.uk
-          </p>
         </div>
       </>
     );
@@ -438,12 +461,12 @@ export default function AdminPage() {
         )}
 
         {/* Header */}
-        <header style={{ background:MS_DARK, padding:'0 20px', display:'flex', alignItems:'center', justifyContent:'space-between', height:'60px', position:'sticky', top:0, zIndex:100 }}>
+        <header style={{ background:RF_DARK, padding:'0 20px', display:'flex', alignItems:'center', justifyContent:'space-between', height:'60px', position:'sticky', top:0, zIndex:100 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'12px', minWidth:0 }}>
-            <img src="/ms-logo.png" alt="Munro Studio" style={{ height:'28px', flexShrink:0 }} />
+            <img src="/logo.png" alt="Root + Fuel" style={{ height:'28px', flexShrink:0 }} />
             <div style={{ width:'1px', height:'20px', background:'rgba(255,255,255,0.1)', flexShrink:0 }} />
             <span style={{ fontFamily:"'Space Grotesk', sans-serif", color:'#fff', fontSize:'14px', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              Root + Fuel
+              Admin
             </span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:'8px', flexShrink:0 }}>
@@ -467,7 +490,7 @@ export default function AdminPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                style={{ flex:1, padding:'14px 8px', background:'transparent', border:'none', borderBottom:`2px solid ${activeTab===tab.id?MS_BLUE:'transparent'}`, color:activeTab===tab.id?MS_BLUE:'#6b7280', fontSize:'14px', fontWeight:activeTab===tab.id?600:400, fontFamily:"'DM Sans', sans-serif", cursor:'pointer', transition:'all 0.15s' }}
+                style={{ flex:1, padding:'14px 8px', background:'transparent', border:'none', borderBottom:`2px solid ${activeTab===tab.id?RF_GREEN:'transparent'}`, color:activeTab===tab.id?RF_GREEN:'#6b7280', fontSize:'14px', fontWeight:activeTab===tab.id?600:400, fontFamily:"'DM Sans', sans-serif", cursor:'pointer', transition:'all 0.15s' }}
               >
                 {tab.label}
               </button>
@@ -552,7 +575,7 @@ export default function AdminPage() {
                     Closed from <strong>{formatDate(newFrom)}</strong> to <strong>{formatDate(newTo)}</strong> (inclusive).
                   </div>
                 )}
-                <button onClick={addHoliday} disabled={saving==='add'} style={{ background:saving==='add'?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:saving==='add'?'not-allowed':'pointer' }}>
+                <button onClick={addHoliday} disabled={saving==='add'} style={{ background:saving==='add'?'rgba(45,107,39,0.5)':RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:saving==='add'?'not-allowed':'pointer' }}>
                   {saving==='add'?'Saving…':'+ Add closure period'}
                 </button>
               </div>
@@ -627,7 +650,7 @@ export default function AdminPage() {
                 </div>
                 <button
                   onClick={() => { setShowAddForm(true); setEditingItem(null); }}
-                  style={{ background:MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 18px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                  style={{ background:RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 18px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
                 >
                   + Add Item
                 </button>
@@ -635,7 +658,7 @@ export default function AdminPage() {
 
               {/* Add item form */}
               {showAddForm && (
-                <div style={{ background:'#fff', border:`2px solid ${MS_BLUE}`, borderRadius:'16px', padding:'24px', marginBottom:'20px' }}>
+                <div style={{ background:'#fff', border:`2px solid ${RF_GREEN}`, borderRadius:'16px', padding:'24px', marginBottom:'20px' }}>
                   <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'16px', fontWeight:600, marginBottom:'18px' }}>New Menu Item</h3>
                   <MenuItemForm
                     item={newItem}
@@ -655,7 +678,7 @@ export default function AdminPage() {
                   <button
                     key={cat}
                     onClick={() => setMenuFilter(cat)}
-                    style={{ background:menuFilter===cat?MS_BLUE:'#fff', color:menuFilter===cat?'#fff':'#374151', border:`1px solid ${menuFilter===cat?MS_BLUE:'rgba(0,0,0,0.12)'}`, borderRadius:'100px', padding:'6px 14px', fontSize:'12px', fontWeight:menuFilter===cat?600:400, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                    style={{ background:menuFilter===cat?RF_GREEN:'#fff', color:menuFilter===cat?'#fff':'#374151', border:`1px solid ${menuFilter===cat?RF_GREEN:'rgba(0,0,0,0.12)'}`, borderRadius:'100px', padding:'6px 14px', fontSize:'12px', fontWeight:menuFilter===cat?600:400, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
                   >
                     {cat}
                   </button>
@@ -663,6 +686,24 @@ export default function AdminPage() {
                 <button onClick={loadMenu} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#6b7280', borderRadius:'100px', padding:'6px 14px', fontSize:'12px', fontFamily:'inherit', cursor:'pointer', flexShrink:0, marginLeft:'auto' }}>
                   ↻ Refresh
                 </button>
+              </div>
+
+              {/* Delivery day filter */}
+              <div style={{ display:'flex', gap:'8px', marginBottom:'16px', overflowX:'auto', paddingBottom:'4px' }}>
+                {[
+                  { id:'All',         label:'All Days' },
+                  { id:'tuesday',     label:'🟢 Tuesday' },
+                  { id:'friday',      label:'🟠 Friday' },
+                  { id:'unassigned',  label:'Unassigned' },
+                ].map(d => (
+                  <button
+                    key={d.id}
+                    onClick={() => setMenuDayFilter(d.id)}
+                    style={{ background:menuDayFilter===d.id?'#111':'#fff', color:menuDayFilter===d.id?'#fff':'#374151', border:`1px solid ${menuDayFilter===d.id?'#111':'rgba(0,0,0,0.12)'}`, borderRadius:'100px', padding:'6px 14px', fontSize:'12px', fontWeight:menuDayFilter===d.id?600:400, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                  >
+                    {d.label}
+                  </button>
+                ))}
               </div>
 
               {/* Menu items list */}
@@ -678,7 +719,7 @@ export default function AdminPage() {
                   {filteredMenu.map(item => (
                     <div key={item.rowNumber}>
                       {editingItem?.rowNumber === item.rowNumber ? (
-                        <div style={{ background:'#fff', border:`2px solid ${MS_BLUE}`, borderRadius:'16px', padding:'20px' }}>
+                        <div style={{ background:'#fff', border:`2px solid ${RF_GREEN}`, borderRadius:'16px', padding:'20px' }}>
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
                             <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'15px', fontWeight:600 }}>Edit Item</h3>
                             <button onClick={()=>setEditingItem(null)} style={{ background:'transparent', border:'none', color:'#9ca3af', fontSize:'20px', cursor:'pointer', padding:'0 4px', lineHeight:1 }}>×</button>
@@ -713,13 +754,31 @@ export default function AdminPage() {
                               <span style={{ background:'#f3f4f6', color:'#6b7280', fontSize:'11px', padding:'2px 8px', borderRadius:'10px' }}>{item.category}</span>
                               <span style={{ fontSize:'13px', fontWeight:600, color:'#374151' }}>£{Number(item.price).toFixed(2)}</span>
                               {!item.available && <span style={{ background:'#fef2f2', color:'#b91c1c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fecaca' }}>Unavailable</span>}
+                              {(item.days || []).includes('tuesday') && <span style={{ background:'#eaf4e8', color:'#2d6b27', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid rgba(45,107,39,0.25)' }}>Tuesday</span>}
+                              {(item.days || []).includes('friday') && <span style={{ background:'#fff7ed', color:'#c2410c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fed7aa' }}>Friday</span>}
                             </div>
                             {item.description && (
                               <p style={{ fontSize:'12px', color:'#9ca3af', marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.description}</p>
                             )}
                           </div>
                           {/* Actions */}
-                          <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
+                          <div style={{ display:'flex', gap:'6px', flexShrink:0, flexWrap:'wrap', justifyContent:'flex-end' }}>
+                            <button
+                              onClick={()=>toggleDay(item, 'tuesday')}
+                              disabled={!!menuSaving}
+                              title={(item.days||[]).includes('tuesday') ? 'Remove from Tuesday delivery' : 'Add to Tuesday delivery'}
+                              style={{ background:(item.days||[]).includes('tuesday')?'#2d6b27':'transparent', border:`1px solid ${(item.days||[]).includes('tuesday')?'#2d6b27':'rgba(0,0,0,0.12)'}`, color:(item.days||[]).includes('tuesday')?'#fff':'#374151', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:menuSaving?'not-allowed':'pointer', whiteSpace:'nowrap' }}
+                            >
+                              {(item.days||[]).includes('tuesday') ? '✓ Tuesday' : '+ Tuesday'}
+                            </button>
+                            <button
+                              onClick={()=>toggleDay(item, 'friday')}
+                              disabled={!!menuSaving}
+                              title={(item.days||[]).includes('friday') ? 'Remove from Friday delivery' : 'Add to Friday delivery'}
+                              style={{ background:(item.days||[]).includes('friday')?'#c2410c':'transparent', border:`1px solid ${(item.days||[]).includes('friday')?'#c2410c':'rgba(0,0,0,0.12)'}`, color:(item.days||[]).includes('friday')?'#fff':'#374151', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:menuSaving?'not-allowed':'pointer', whiteSpace:'nowrap' }}
+                            >
+                              {(item.days||[]).includes('friday') ? '✓ Friday' : '+ Friday'}
+                            </button>
                             <button
                               onClick={()=>setEditingItem({...item})}
                               disabled={!!menuSaving}
@@ -767,7 +826,7 @@ export default function AdminPage() {
                 </div>
                 <button
                   onClick={() => setShowAddPromo(p => !p)}
-                  style={{ background:MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 18px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                  style={{ background:RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 18px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
                 >
                   {showAddPromo ? '✕ Cancel' : '+ New Code'}
                 </button>
@@ -775,7 +834,7 @@ export default function AdminPage() {
 
               {/* Add promo form */}
               {showAddPromo && (
-                <div style={{ background:'#fff', border:`2px solid ${MS_BLUE}`, borderRadius:'16px', padding:'24px', marginBottom:'20px' }}>
+                <div style={{ background:'#fff', border:`2px solid ${RF_GREEN}`, borderRadius:'16px', padding:'24px', marginBottom:'20px' }}>
                   <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'16px', fontWeight:600, marginBottom:'18px' }}>New Promo Code</h3>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'12px', marginBottom:'12px' }}>
                     <div>
@@ -829,7 +888,7 @@ export default function AdminPage() {
                   <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
                     <button
                       onClick={createPromo} disabled={promoSaving === 'add'}
-                      style={{ background:promoSaving==='add'?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:promoSaving==='add'?'not-allowed':'pointer' }}
+                      style={{ background:promoSaving==='add'?'rgba(45,107,39,0.5)':RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:promoSaving==='add'?'not-allowed':'pointer' }}
                     >
                       {promoSaving === 'add' ? 'Creating…' : 'Create Code'}
                     </button>
@@ -924,14 +983,6 @@ export default function AdminPage() {
           )}
 
         </main>
-
-        <footer style={{ background:MS_DARK, padding:'18px 20px', textAlign:'center' }}>
-          <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'12px' }}>
-            Built &amp; maintained by{' '}
-            <a href="https://munrostudio.co.uk" target="_blank" rel="noreferrer" style={{ color:MS_BLUE, textDecoration:'none' }}>Munro Studio</a>
-            {' '}· Glasgow Web Design · £55/month
-          </p>
-        </footer>
 
         <style>{`
           @keyframes fadeIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
@@ -1102,7 +1153,7 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
         {uploadError && <p style={{ color:'#ef4444', fontSize:'12px', marginTop:'6px' }}>{uploadError}</p>}
       </div>
 
-      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
         <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'14px', color:'#374151' }}>
           <input
             type="checkbox"
@@ -1113,8 +1164,35 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
           Available on menu
         </label>
       </div>
+
+      <div style={{ marginBottom:'20px' }}>
+        <label style={labelStyle}>Delivery day</label>
+        <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+          {[
+            { id:'tuesday', label:'Add to Tuesday delivery' },
+            { id:'friday',  label:'Add to Friday delivery' },
+          ].map(d => {
+            const active = (item.days || []).includes(d.id);
+            return (
+              <label key={d.id} style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'13px', color: active ? '#111' : '#6b7280', background: active ? (d.id==='tuesday'?'#eaf4e8':'#fff7ed') : '#f9fafb', border:`1px solid ${active ? (d.id==='tuesday'?'#2d6b27':'#c2410c') : 'rgba(0,0,0,0.1)'}`, borderRadius:'10px', padding:'8px 14px' }}>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={e => set('days', e.target.checked
+                    ? [...(item.days || []), d.id]
+                    : (item.days || []).filter(x => x !== d.id))}
+                  style={{ width:'16px', height:'16px', cursor:'pointer' }}
+                />
+                {d.label}
+              </label>
+            );
+          })}
+        </div>
+        <p style={{ fontSize:'11px', color:'#9ca3af', marginTop:'6px' }}>Leave both unchecked to show this item every delivery day.</p>
+      </div>
+
       <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-        <button onClick={onSave} disabled={saving || uploading} style={{ background:(saving||uploading)?'rgba(37,99,235,0.5)':MS_BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:"'DM Sans', sans-serif", cursor:(saving||uploading)?'not-allowed':'pointer' }}>
+        <button onClick={onSave} disabled={saving || uploading} style={{ background:(saving||uploading)?'rgba(45,107,39,0.5)':RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:"'DM Sans', sans-serif", cursor:(saving||uploading)?'not-allowed':'pointer' }}>
           {saving?'Saving…':saveLabel}
         </button>
         <button onClick={onCancel} disabled={saving} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}>

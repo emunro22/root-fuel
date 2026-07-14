@@ -23,10 +23,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { category, name, description, price, image, available } = req.body || {};
+    const { category, name, description, price, image, available, days } = req.body || {};
     if (!category || !name) return res.status(400).json({ error: 'category and name are required' });
     try {
-      await addMenuRow({ category, name, description: description || '', price: parseFloat(price) || 0, image: image || '', available: !!available });
+      await addMenuRow({ category, name, description: description || '', price: parseFloat(price) || 0, image: image || '', available: !!available, days: days || [] });
       const rows = await getAllMenuRows();
       return res.status(200).json({ items: rows });
     } catch (e) {
@@ -36,10 +36,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    const { rowNumber, category, name, description, price, image, available } = req.body || {};
+    const { rowNumber, category, name, description, price, image, available, days } = req.body || {};
     if (!rowNumber || !category || !name) return res.status(400).json({ error: 'rowNumber, category and name are required' });
     try {
-      await updateMenuRow(parseInt(rowNumber), { category, name, description: description || '', price: parseFloat(price) || 0, image: image || '', available: !!available });
+      await updateMenuRow(parseInt(rowNumber), { category, name, description: description || '', price: parseFloat(price) || 0, image: image || '', available: !!available, days: days || [] });
       const rows = await getAllMenuRows();
       return res.status(200).json({ items: rows });
     } catch (e) {

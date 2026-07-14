@@ -226,8 +226,17 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const categoryItems = menu.filter(i => i.category === activeCategory);
-  const availableCategories = CATEGORIES.filter(cat => menu.some(i => i.category === cat.name));
+
+  // Items with no delivery day assigned stay visible every day (keeps legacy
+  // items showing until an admin assigns them). Tagged items only show while
+  // their delivery window is open, so the menu switches automatically as
+  // Tuesday's/Friday's ordering windows open and close.
+  const visibleMenu = menu.filter(i => {
+    if (!i.days || i.days.length === 0) return true;
+    return (tuesdayOpen && i.days.includes('tuesday')) || (fridayOpen && i.days.includes('friday'));
+  });
+  const categoryItems = visibleMenu.filter(i => i.category === activeCategory);
+  const availableCategories = CATEGORIES.filter(cat => visibleMenu.some(i => i.category === cat.name));
 
   const scrollToMenu  = () => { document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
   const scrollToAbout = () => { document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
