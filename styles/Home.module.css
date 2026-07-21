@@ -260,7 +260,7 @@
 }
 .aboutInner {
   max-width: 1180px; margin: 0 auto;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center;
+  display: grid; grid-template-columns: 1.5fr 1fr; gap: 72px; align-items: center;
 }
 .aboutLabel {
   display: block;

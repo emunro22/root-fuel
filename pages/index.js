@@ -694,13 +694,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                 <div style={{
                   position: 'relative', width: '72px', height: '72px', borderRadius: '50%',
                   background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
-                  boxSizing: 'border-box', padding: '10px', overflow: 'hidden',
+                  boxSizing: 'border-box', overflow: 'hidden',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <img
                     src={s.logo}
                     alt={`${s.name} logo`}
-                    style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling.style.display = 'flex';
@@ -719,8 +719,24 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                 </div>
                 <div>
                   <p style={{ fontSize: '15px', fontWeight: 600, color: '#1a2418', marginBottom: '4px' }}>{s.name}</p>
-                  <p style={{ fontSize: '13px', color: '#7a8f77' }}>{s.address}</p>
+                  <p style={{ fontSize: '13px', color: '#7a8f77', marginBottom: '12px' }}>{s.address}</p>
                 </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    fontSize: '12px', fontWeight: 600, color: GREEN,
+                    border: `1px solid ${GREEN}`, borderRadius: '100px',
+                    padding: '7px 14px', textDecoration: 'none',
+                  }}
+                >
+                  Get Directions
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </a>
               </div>
             ))}
           </div>
