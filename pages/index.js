@@ -20,6 +20,27 @@ const CREAM = '#f5f1ea';
 const WHITE = '#ffffff';
 const GREEN = '#2d6b27';
 
+// Local shops and gyms that stock Root + Fuel — drop matching logo files into
+// /public/stockists/ (see the `logo` path below); until a file exists, the
+// initials badge is shown instead so nothing ever renders as a broken image.
+const STOCKISTS = [
+  { name: 'Spar',                     address: 'Kilbowie Road',    logo: '/stockists/spar.png' },
+  { name: 'Top of the Hill Butchers', address: 'Kilbowie Road',    logo: '/stockists/top-of-the-hill-butchers.jpg' },
+  { name: 'Keystore',                 address: 'Baldwin Avenue',   logo: '/stockists/keystore.jpg' },
+  { name: 'Nisa Local',               address: 'Old Kilpatrick',   logo: '/stockists/nisa-local.png' },
+  { name: 'Foundry Gym',              address: 'Renfrew',          logo: '/stockists/foundry-gym.jpg' },
+];
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
+}
+
 /**
  * Ordering schedule (two delivery windows):
  *   Tuesday delivery: order Wed(3) → Sat(6) midnight
@@ -752,6 +773,73 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
             </svg>
           </button>
         </div>
+
+        {/* Find Us Nearby */}
+        <section style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
+          <span className={styles.aboutLabel}>Stockists</span>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(30px, 4.5vw, 40px)',
+            fontWeight: 400,
+            color: '#1a2418',
+            margin: '6px 0 14px',
+          }}>
+            Find us <span style={{ color: GREEN, fontStyle: 'italic' }}>nearby</span>
+          </h2>
+          <p style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7 }}>
+            Can&apos;t wait for delivery day? Grab Root &amp; Fuel from one of these local stockists.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '20px',
+            maxWidth: '980px',
+            margin: '0 auto',
+          }}>
+            {STOCKISTS.map(s => (
+              <div key={s.name} style={{
+                background: CREAM,
+                border: '1px solid rgba(0,0,0,0.06)',
+                borderRadius: '16px',
+                padding: '28px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '14px',
+              }}>
+                <div style={{ position: 'relative', width: '72px', height: '72px' }}>
+                  <img
+                    src={s.logo}
+                    alt={`${s.name} logo`}
+                    style={{
+                      width: '72px', height: '72px', borderRadius: '50%',
+                      objectFit: 'contain', background: '#fff',
+                      border: '1px solid rgba(0,0,0,0.08)', padding: '10px',
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div style={{
+                    display: 'none',
+                    position: 'absolute', inset: 0,
+                    width: '72px', height: '72px', borderRadius: '50%',
+                    background: '#eaf4e8', border: '1px solid rgba(45,107,39,0.2)',
+                    color: GREEN, alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: '22px',
+                  }}>
+                    {getInitials(s.name)}
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: '15px', fontWeight: 600, color: '#1a2418', marginBottom: '4px' }}>{s.name}</p>
+                  <p style={{ fontSize: '13px', color: '#7a8f77' }}>{s.address}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Footer */}
         <footer className={styles.footer}>
