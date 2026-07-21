@@ -24,11 +24,11 @@ const GREEN = '#2d6b27';
 // /public/stockists/ (see the `logo` path below); until a file exists, the
 // initials badge is shown instead so nothing ever renders as a broken image.
 const STOCKISTS = [
-  { name: 'Spar',                     address: 'Kilbowie Road',    logo: '/stockists/spar.png' },
-  { name: 'Top of the Hill Butchers', address: 'Kilbowie Road',    logo: '/stockists/top-of-the-hill-butchers.jpg' },
-  { name: 'Keystore',                 address: 'Baldwin Avenue',   logo: '/stockists/keystore.jpg' },
-  { name: 'Nisa Local',               address: 'Old Kilpatrick',   logo: '/stockists/nisa-local.png' },
-  { name: 'Foundry Gym',              address: 'Renfrew',          logo: '/stockists/foundry-gym.jpg' },
+  { name: 'Spar',                     address: '493 Kilbowie Road, Clydebank, G81 2AX',          logo: '/stockists/spar.png' },
+  { name: 'Top of the Hill Butchers', address: '383 Kilbowie Road, Clydebank, G81 2TU',          logo: '/stockists/top-of-the-hill-butchers.jpg' },
+  { name: 'Keystore',                 address: '104-108 Baldwin Avenue, Knightswood, G13 2QU',  logo: '/stockists/keystore.jpg' },
+  { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png' },
+  { name: 'Foundry Gym',              address: '2 Ferry Road, Renfrew, PA4 8RU',                 logo: '/stockists/foundry-gym.jpg' },
 ];
 
 function getInitials(name) {
@@ -658,6 +658,74 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
           </div>
         </section>
 
+        {/* Find Us Nearby */}
+        <section style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
+          <span className={styles.aboutLabel}>Stockists</span>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(30px, 4.5vw, 40px)',
+            fontWeight: 400,
+            color: '#1a2418',
+            margin: '6px 0 14px',
+          }}>
+            Find us <span style={{ color: GREEN, fontStyle: 'italic' }}>nearby</span>
+          </h2>
+          <p style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7 }}>
+            Can&apos;t wait for delivery day? Grab Root &amp; Fuel from one of these local stockists.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '20px',
+            maxWidth: '980px',
+            margin: '0 auto',
+          }}>
+            {STOCKISTS.map(s => (
+              <div key={s.name} style={{
+                background: CREAM,
+                border: '1px solid rgba(0,0,0,0.06)',
+                borderRadius: '16px',
+                padding: '28px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '14px',
+              }}>
+                <div style={{
+                  position: 'relative', width: '72px', height: '72px', borderRadius: '50%',
+                  background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
+                  boxSizing: 'border-box', padding: '10px', overflow: 'hidden',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <img
+                    src={s.logo}
+                    alt={`${s.name} logo`}
+                    style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div style={{
+                    display: 'none',
+                    position: 'absolute', inset: 0,
+                    borderRadius: '50%',
+                    background: '#eaf4e8', border: '1px solid rgba(45,107,39,0.2)',
+                    color: GREEN, alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: '22px',
+                  }}>
+                    {getInitials(s.name)}
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: '15px', fontWeight: 600, color: '#1a2418', marginBottom: '4px' }}>{s.name}</p>
+                  <p style={{ fontSize: '13px', color: '#7a8f77' }}>{s.address}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Menu */}
         <div style={{ background: CREAM, width: '100%' }}>
           <main id="menu" style={{ background: CREAM, maxWidth: '1180px', margin: '0 auto', padding: '60px 28px 110px', scrollMarginTop: '70px' }}>
@@ -773,73 +841,6 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
             </svg>
           </button>
         </div>
-
-        {/* Find Us Nearby */}
-        <section style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
-          <span className={styles.aboutLabel}>Stockists</span>
-          <h2 style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 'clamp(30px, 4.5vw, 40px)',
-            fontWeight: 400,
-            color: '#1a2418',
-            margin: '6px 0 14px',
-          }}>
-            Find us <span style={{ color: GREEN, fontStyle: 'italic' }}>nearby</span>
-          </h2>
-          <p style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7 }}>
-            Can&apos;t wait for delivery day? Grab Root &amp; Fuel from one of these local stockists.
-          </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '20px',
-            maxWidth: '980px',
-            margin: '0 auto',
-          }}>
-            {STOCKISTS.map(s => (
-              <div key={s.name} style={{
-                background: CREAM,
-                border: '1px solid rgba(0,0,0,0.06)',
-                borderRadius: '16px',
-                padding: '28px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '14px',
-              }}>
-                <div style={{ position: 'relative', width: '72px', height: '72px' }}>
-                  <img
-                    src={s.logo}
-                    alt={`${s.name} logo`}
-                    style={{
-                      width: '72px', height: '72px', borderRadius: '50%',
-                      objectFit: 'contain', background: '#fff',
-                      border: '1px solid rgba(0,0,0,0.08)', padding: '10px',
-                    }}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div style={{
-                    display: 'none',
-                    position: 'absolute', inset: 0,
-                    width: '72px', height: '72px', borderRadius: '50%',
-                    background: '#eaf4e8', border: '1px solid rgba(45,107,39,0.2)',
-                    color: GREEN, alignItems: 'center', justifyContent: 'center',
-                    fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: '22px',
-                  }}>
-                    {getInitials(s.name)}
-                  </div>
-                </div>
-                <div>
-                  <p style={{ fontSize: '15px', fontWeight: 600, color: '#1a2418', marginBottom: '4px' }}>{s.name}</p>
-                  <p style={{ fontSize: '13px', color: '#7a8f77' }}>{s.address}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Footer */}
         <footer className={styles.footer}>
