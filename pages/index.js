@@ -23,12 +23,15 @@ const GREEN = '#2d6b27';
 // Local shops and gyms that stock Root + Fuel — drop matching logo files into
 // /public/stockists/ (see the `logo` path below); until a file exists, the
 // initials badge is shown instead so nothing ever renders as a broken image.
+// `fit: 'contain'` is for wide wordmark logos (would get cropped by a circular
+// cover-fit), `fit: 'cover'` is for square/round badge logos that should fill
+// the circle edge-to-edge.
 const STOCKISTS = [
-  { name: 'Spar',                     address: '493 Kilbowie Road, Clydebank, G81 2AX',          logo: '/stockists/spar.png' },
-  { name: 'Top of the Hill Butchers', address: '383 Kilbowie Road, Clydebank, G81 2TU',          logo: '/stockists/top-of-the-hill-butchers.jpg' },
-  { name: 'Keystore',                 address: '104-108 Baldwin Avenue, Knightswood, G13 2QU',  logo: '/stockists/keystore.jpg' },
-  { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png' },
-  { name: 'Foundry Gym',              address: '2 Ferry Road, Renfrew, PA4 8RU',                 logo: '/stockists/foundry-gym.jpg' },
+  { name: 'Spar',                     address: '493 Kilbowie Road, Clydebank, G81 2AX',          logo: '/stockists/spar.png',                        fit: 'contain' },
+  { name: 'Top of the Hill Butchers', address: '383 Kilbowie Road, Clydebank, G81 2TU',          logo: '/stockists/top-of-the-hill-butchers.jpg',    fit: 'cover' },
+  { name: 'Keystore',                 address: '104-108 Baldwin Avenue, Knightswood, G13 2QU',  logo: '/stockists/keystore.jpg',                    fit: 'cover' },
+  { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png',                  fit: 'contain' },
+  { name: 'Foundry Gym',              address: '2 Ferry Road, Renfrew, PA4 8RU',                 logo: '/stockists/foundry-gym.jpg',                 fit: 'cover' },
 ];
 
 function getInitials(name) {
@@ -212,6 +215,24 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
       .then(data => { setMenu(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  // Fade + rise sections into view as the user scrolls to them
+  useEffect(() => {
+    const revealClasses = [styles.reveal, styles.revealLeft, styles.revealRight].filter(Boolean);
+    const selector = revealClasses.map(c => `.${c}`).join(', ');
+    const els = document.querySelectorAll(selector);
+    if (!els.length) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add(styles.revealVisible);
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, [loading]);
 
   useEffect(() => {
     fetch('/api/promos')
@@ -624,7 +645,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         {/* About */}
         <section id="about" style={{ background: WHITE, borderBottom: '1px solid rgba(0,0,0,0.08)', padding: '88px 28px', scrollMarginTop: '70px' }}>
           <div className={styles.aboutInner}>
-            <div>
+            <div className={styles.revealLeft}>
               <span className={styles.aboutLabel}>Our Story</span>
               <h2 className={styles.aboutTitle}>
                 I didn&apos;t start Root &amp; Fuel<br />because it was <em>easy</em>
@@ -648,97 +669,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                 Nothing we do is overly complicated or pretentious. It&apos;s simply good food, made with intention and purpose. Because when you eat better, you feel better. And when you feel better, everything else starts to follow.
               </p>
             </div>
-            <div className={styles.aboutVisual}>
+            <div className={`${styles.aboutVisual} ${styles.revealRight}`}>
               <div className={styles.aboutVisualCard} style={{ background: 'linear-gradient(145deg,#eaf4e8 0%,#f5f1ea 100%)' }}>
                 <div className={styles.aboutVisualPattern} />
                 <img src="/logo.png" alt="Root + Fuel" className={styles.aboutLogoLarge} />
                 <p className={styles.aboutTagline}>&ldquo;Performance nutrition,<br />rooted in nature.&rdquo;</p>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Find Us Nearby */}
-        <section style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
-          <span className={styles.aboutLabel}>Stockists</span>
-          <h2 style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 'clamp(30px, 4.5vw, 40px)',
-            fontWeight: 400,
-            color: '#1a2418',
-            margin: '6px 0 14px',
-          }}>
-            Find us <span style={{ color: GREEN, fontStyle: 'italic' }}>nearby</span>
-          </h2>
-          <p style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7 }}>
-            Can&apos;t wait for delivery day? Grab Root &amp; Fuel from one of these local stockists.
-          </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '20px',
-            maxWidth: '980px',
-            margin: '0 auto',
-          }}>
-            {STOCKISTS.map(s => (
-              <div key={s.name} style={{
-                background: CREAM,
-                border: '1px solid rgba(0,0,0,0.06)',
-                borderRadius: '16px',
-                padding: '28px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '14px',
-              }}>
-                <div style={{
-                  position: 'relative', width: '72px', height: '72px', borderRadius: '50%',
-                  background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
-                  boxSizing: 'border-box', overflow: 'hidden',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <img
-                    src={s.logo}
-                    alt={`${s.name} logo`}
-                    style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div style={{
-                    display: 'none',
-                    position: 'absolute', inset: 0,
-                    borderRadius: '50%',
-                    background: '#eaf4e8', border: '1px solid rgba(45,107,39,0.2)',
-                    color: GREEN, alignItems: 'center', justifyContent: 'center',
-                    fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: '22px',
-                  }}>
-                    {getInitials(s.name)}
-                  </div>
-                </div>
-                <div>
-                  <p style={{ fontSize: '15px', fontWeight: 600, color: '#1a2418', marginBottom: '4px' }}>{s.name}</p>
-                  <p style={{ fontSize: '13px', color: '#7a8f77', marginBottom: '12px' }}>{s.address}</p>
-                </div>
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    fontSize: '12px', fontWeight: 600, color: GREEN,
-                    border: `1px solid ${GREEN}`, borderRadius: '100px',
-                    padding: '7px 14px', textDecoration: 'none',
-                  }}
-                >
-                  Get Directions
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </a>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -797,6 +734,95 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
           </main>
         </div>
 
+        {/* Find Us Nearby */}
+        <section style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
+          <span className={`${styles.aboutLabel} ${styles.reveal}`}>Stockists</span>
+          <h2 className={styles.reveal} style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(30px, 4.5vw, 40px)',
+            fontWeight: 400,
+            color: '#1a2418',
+            margin: '6px 0 14px',
+            transitionDelay: '80ms',
+          }}>
+            Find us <span style={{ color: GREEN, fontStyle: 'italic' }}>nearby</span>
+          </h2>
+          <p className={styles.reveal} style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7, transitionDelay: '140ms' }}>
+            Can&apos;t wait for delivery day? Grab Root &amp; Fuel from one of these local stockists.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '20px',
+            maxWidth: '980px',
+            margin: '0 auto',
+          }}>
+            {STOCKISTS.map((s, i) => (
+              <div key={s.name} className={`${styles.reveal} ${styles.liftCard}`} style={{
+                background: CREAM,
+                border: '1px solid rgba(0,0,0,0.06)',
+                borderRadius: '16px',
+                padding: '28px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '14px',
+                transitionDelay: `${i * 80}ms`,
+              }}>
+                <div style={{
+                  position: 'relative', width: '72px', height: '72px', borderRadius: '50%',
+                  background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
+                  boxSizing: 'border-box', overflow: 'hidden',
+                  padding: s.fit === 'contain' ? '12px' : 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <img
+                    src={s.logo}
+                    alt={`${s.name} logo`}
+                    style={{ display: 'block', width: '100%', height: '100%', objectFit: s.fit || 'cover' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div style={{
+                    display: 'none',
+                    position: 'absolute', inset: 0,
+                    borderRadius: '50%',
+                    background: '#eaf4e8', border: '1px solid rgba(45,107,39,0.2)',
+                    color: GREEN, alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: '22px',
+                  }}>
+                    {getInitials(s.name)}
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: '15px', fontWeight: 600, color: '#1a2418', marginBottom: '4px' }}>{s.name}</p>
+                  <p style={{ fontSize: '13px', color: '#7a8f77', marginBottom: '12px' }}>{s.address}</p>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${styles.popBtn} ${styles.directionsBtn}`}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    fontSize: '12px', fontWeight: 600, color: GREEN,
+                    border: `1px solid ${GREEN}`, borderRadius: '100px',
+                    padding: '7px 14px', textDecoration: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  Get Directions
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Sticky order — hidden when locked */}
         {cartCount > 0 && !mobileMenuOpen && !locked && (
           <div className={styles.stickyOrder}>
@@ -818,7 +844,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
 
         {/* Catering Banner */}
-        <div style={{
+        <div className={styles.reveal} style={{
           background: '#1a2418',
           borderTop: '1px solid rgba(255,255,255,0.06)',
           padding: '48px 28px',
@@ -843,6 +869,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
           </p>
           <button
             onClick={() => setShowCatering(true)}
+            className={styles.popBtn}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               background: 'linear-gradient(135deg, #2d6b27, #4a9e40)',
@@ -861,12 +888,12 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         {/* Footer */}
         <footer className={styles.footer}>
           <div className={styles.footerInner}>
-            <div className={styles.footerBrand}>
+            <div className={`${styles.footerBrand} ${styles.reveal}`}>
               <img src="/logo.png" alt="Root + Fuel" className={styles.footerLogo} />
               <p className={styles.footerTagline}>Performance nutrition, rooted in nature.</p>
               <p className={styles.footerLocation}>All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE</p>
             </div>
-            <div className={styles.footerCol}>
+            <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '80ms' }}>
               <p className={styles.footerColTitle}>Menu</p>
               {availableCategories.map(cat => (
                 <button key={cat.name} className={styles.footerLink} onClick={() => switchCategory(cat.name)}>
@@ -874,13 +901,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                 </button>
               ))}
             </div>
-            <div className={styles.footerCol}>
+            <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '140ms' }}>
               <p className={styles.footerColTitle}>Info</p>
               <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
               <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
               <button className={styles.footerLink} onClick={() => setShowCatering(true)}>Catering Services</button>
             </div>
-            <div className={styles.footerCol}>
+            <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '200ms' }}>
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
                 <strong>Two delivery days</strong><br />

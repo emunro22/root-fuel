@@ -5,6 +5,48 @@
   color: var(--text);
 }
 
+/* ─── Scroll-reveal ───────────────────────────────────── */
+/* Elements start hidden/offset, then fade + rise into place once they
+   scroll into view (toggled by an IntersectionObserver in pages/index.js). */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1);
+  will-change: opacity, transform;
+}
+.revealLeft {
+  opacity: 0;
+  transform: translateX(-36px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+.revealRight {
+  opacity: 0;
+  transform: translateX(36px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+.revealVisible { opacity: 1 !important; transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .revealLeft, .revealRight { opacity: 1; transform: none; transition: none; }
+}
+
+/* ─── Hover lift (stockist cards, CTA buttons) ────────── */
+.liftCard {
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.liftCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.10);
+}
+.popBtn {
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.popBtn:hover { transform: translateY(-2px); }
+.popBtn:active { transform: translateY(0); }
+.directionsBtn:hover {
+  background: var(--green) !important;
+  color: #fff !important;
+}
+
 /* ─── Tuesday Banner ──────────────────────────────────── */
 .tuesdayBanner {
   background: #0f0f0f !important;
