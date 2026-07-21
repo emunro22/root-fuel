@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './OrderForm.module.css';
 
 const ORDER_TYPES = [
@@ -62,35 +62,69 @@ function isAddressSufficientlyDetailed(address) {
   return hasNumber && hasText && hasPostcode;
 }
 
+// Persist in-progress order details so they survive a trip to Stripe and back
+// (e.g. the customer clicks "back" or cancels payment).
+const STORAGE_KEY = 'rf_order_form';
+const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24h — matches the pending-order/session expiry
+
+function loadSavedFormState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+    const { data, ts } = JSON.parse(saved);
+    if (Date.now() - ts > STORAGE_TTL) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
   const availableDays = [];
   if (tuesdayOpen) availableDays.push('Tuesday');
   if (fridayOpen)  availableDays.push('Friday');
 
-  const [orderType, setOrderType] = useState('pickup');
-  const [form,      setForm]      = useState({ name: '', email: '', phone: '', address: '', notes: '' });
+  // Resume any in-progress order details saved before the customer left for payment
+  const [saved] = useState(() => loadSavedFormState());
+
+  const [orderType, setOrderType] = useState(() => saved?.orderType || 'pickup');
+  const [form,      setForm]      = useState(() => saved?.form || { name: '', email: '', phone: '', address: '', notes: '' });
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
   // Delivery day — default to first available
-  const [deliveryDay, setDeliveryDay] = useState(availableDays[0] || 'Tuesday');
+  const [deliveryDay, setDeliveryDay] = useState(() => saved?.deliveryDay || availableDays[0] || 'Tuesday');
   const collectionSlots = deliveryDay === 'Friday' ? FRIDAY_SLOTS : TUESDAY_SLOTS;
 
   // Collection slot
-  const [collectionSlot, setCollectionSlot] = useState('');
+  const [collectionSlot, setCollectionSlot] = useState(() => saved?.collectionSlot || '');
 
   // Address validation state
   const [addressChecking, setAddressChecking] = useState(false);
-  const [addressValid,    setAddressValid]     = useState(null); // null | true | false
+  const [addressValid,    setAddressValid]     = useState(() => saved?.addressValid ?? null); // null | true | false
   const [addressError,    setAddressError]     = useState('');
-  const [addressDistance, setAddressDistance]  = useState(null);
-  const [deliveryFee,     setDeliveryFee]      = useState(null); // set after address check
+  const [addressDistance, setAddressDistance]  = useState(() => saved?.addressDistance ?? null);
+  const [deliveryFee,     setDeliveryFee]      = useState(() => saved?.deliveryFee ?? null); // set after address check
 
   // Promo code state
-  const [promoCode,    setPromoCode]    = useState('');
-  const [promoResult,  setPromoResult]  = useState(null);
+  const [promoCode,    setPromoCode]    = useState(() => saved?.promoCode || '');
+  const [promoResult,  setPromoResult]  = useState(() => saved?.promoResult || null);
   const [promoError,   setPromoError]   = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
+
+  // Save order details whenever they change, so they're still there if the
+  // customer clicks off to Stripe and comes back (cancel, back button, etc.)
+  useEffect(() => {
+    try {
+      const data = {
+        orderType, form, deliveryDay, collectionSlot,
+        addressValid, addressDistance, deliveryFee,
+        promoCode, promoResult,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, ts: Date.now() }));
+    } catch {}
+  }, [orderType, form, deliveryDay, collectionSlot, addressValid, addressDistance, deliveryFee, promoCode, promoResult]);
 
   const cartSubtotal  = cart.reduce((s, i) => s + i.price * i.quantity, 0);
   const appliedFee    = orderType === 'delivery' && deliveryFee !== null ? deliveryFee : 0;

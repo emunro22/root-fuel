@@ -8,6 +8,11 @@ export default function SuccessPage() {
   const { order_id, session_id } = router.query;
   const [confirmed, setConfirmed] = useState(false);
 
+  // Order completed — clear the saved in-progress form so it doesn't resurface next time
+  useEffect(() => {
+    try { localStorage.removeItem('rf_order_form'); } catch {}
+  }, []);
+
   // On success page load, mark order as paid via a direct API call
   useEffect(() => {
     if (session_id && order_id && !confirmed) {

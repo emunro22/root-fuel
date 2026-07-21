@@ -173,6 +173,18 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
     } catch {}
   }, [cart]);
 
+  // Reopen the order form if the customer is back from a cancelled Stripe payment
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('cancelled') === 'true') {
+      setShowForm(true);
+      params.delete('cancelled');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : ''));
+    }
+  }, []);
+
   useEffect(() => {
     fetch('/api/menu')
       .then(r => r.json())
