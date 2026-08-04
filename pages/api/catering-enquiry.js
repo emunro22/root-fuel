@@ -1,113 +1,59 @@
-import Stripe from 'stripe';
-import { v4 as uuidv4 } from 'uuid';
-import { appendOrder } from '../../lib/sheets';
+import { Resend } from 'resend';
+import { appendCateringEnquiry } from '../../lib/sheets';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_ENQUIRY = 'Root + Fuel <orders@rootandfuelltd.com>';
+const OWNER_EMAIL   = 'samanthahamilton@rootandfuelltd.com';
 
-function isOrderingLocked() {
-  const now = new Date();
-  const ukParts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/London',
-    weekday: 'short',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hour12: false,
-  }).formatToParts(now);
-  const day  = ukParts.find(p => p.type === 'weekday')?.value;
-  const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
-  const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
-  const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
-
-  if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
-  if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
-  return false;
+function buildOwnerEmail({ name, email, phone, eventDate, guestCount, message }) {
+  return {
+    subject: `🍽️ New catering enquiry from ${name}`,
+    html: `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color:#f5f1ea; padding:40px 10px;">
+        <div style="max-width:500px; margin:auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <div style="background-color:#316431; padding:30px; text-align:center;">
+            <h1 style="color:#ffffff; margin:0; font-size:24px; letter-spacing:1px;">Root + Fuel</h1>
+          </div>
+          <div style="padding:30px;">
+            <div style="background:#eef5ee; border-radius:12px; padding:20px; text-align:center; margin-bottom:25px;">
+              <h2 style="margin:0; color:#316431; font-size:20px;">🍽️ New Catering Enquiry</h2>
+            </div>
+            <p style="margin:5px 0; font-size:14px;"><strong>Name:</strong> ${name}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#316431; text-decoration:none;">${email}</a></p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone || '—'}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Event date:</strong> ${eventDate || '—'}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Guest count:</strong> ${guestCount || '—'}</p>
+            <p style="margin:15px 0 0; font-size:14px; color:#333; background:#f9f9f9; padding:12px; border-radius:8px; line-height:1.5;">${message}</p>
+          </div>
+        </div>
+      </div>
+    `,
+  };
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot } = req.body;
 
-  if (isOrderingLocked()) {
-    return res.status(403).json({ error: 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.' });
-  }
+  const { name, email, phone, eventDate, guestCount, message } = req.body || {};
 
-  if (!items?.length || !customer?.email || !customer?.name) {
+  if (!name?.trim() || !email?.trim() || !message?.trim()) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const orderId    = `ORD-${uuidv4().slice(0, 6).toUpperCase()}`;
-  const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const fee        = orderType === 'delivery' ? (deliveryFee || 2.99) : 0;
-  const total      = itemsTotal + fee;
-  const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-  // Save order to Sheets immediately as pending_payment
-  // Webhook will update status to paid — no item data needed in Stripe metadata at all
   try {
-    await appendOrder({
-      orderId,
-      status:         'pending_payment',
-      type:           orderType,
-      name:           customer.name,
-      email:          customer.email,
-      phone:          customer.phone || '',
-      table:          table || '',
-      address:        address || '',
-      items,
-      total,
-      deliveryFee:    fee,
-      notes:          notes || '',
-      collectionSlot: collectionSlot || '',
-    });
+    await appendCateringEnquiry({ name, email, phone, eventDate, guestCount, message });
   } catch (e) {
-    console.error('[checkout] Failed to write pending order to Sheets:', e.message);
-    // Don't block checkout — Stripe webhook will still fire
-  }
-
-  const lineItems = items.map(item => ({
-    price_data: {
-      currency: 'gbp',
-      product_data: { name: item.name },
-      unit_amount: Math.round(item.price * 100),
-    },
-    quantity: item.quantity,
-  }));
-
-  if (orderType === 'delivery' && fee > 0) {
-    lineItems.push({
-      price_data: {
-        currency: 'gbp',
-        product_data: { name: 'Delivery Fee' },
-        unit_amount: Math.round(fee * 100),
-      },
-      quantity: 1,
-    });
+    console.error('[catering-enquiry] Failed to write enquiry to Sheets:', e.message);
+    return res.status(500).json({ error: 'Could not save your enquiry. Please try again.' });
   }
 
   try {
-    const sessionParams = {
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      customer_email: customer.email,
-      metadata: {
-        orderId, // only thing we need — everything else is in Sheets
-      },
-      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-      cancel_url:  `${appUrl}/?cancelled=true`,
-    };
-
-    if (promotionCodeId) {
-      sessionParams.discounts = [{ promotion_code: promotionCodeId }];
-    } else {
-      sessionParams.allow_promotion_codes = true;
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
-    res.status(200).json({ sessionId: session.id, url: session.url });
-  } catch (err) {
-    console.error('[checkout] Stripe error:', err.message);
-    res.status(500).json({ error: err.message });
+    const owner = buildOwnerEmail({ name, email, phone, eventDate, guestCount, message });
+    await resend.emails.send({ from: FROM_ENQUIRY, to: OWNER_EMAIL, ...owner });
+  } catch (e) {
+    console.error('[catering-enquiry] Owner email error:', e.message);
+    // Don't fail the request — the enquiry is already saved in Sheets
   }
+
+  return res.status(200).json({ ok: true });
 }
