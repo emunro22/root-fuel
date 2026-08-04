@@ -16,6 +16,17 @@ export const config = { api: { bodyParser: false } };
 
 const processedEvents = new Set();
 
+function formatDeliveryDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+}
+
 async function buffer(readable) {
   const chunks = [];
   for await (const chunk of readable)
@@ -32,11 +43,16 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
     </tr>
   `).join('');
 
+  const deliveryDateStr = orderType === 'delivery'
+    ? formatDeliveryDate(nextDeliveryDate(deliveryDay || 'Tuesday'))
+    : null;
+
   const instructionsBlock = orderType === 'delivery'
     ? `
       <div style="margin-top:20px; padding:15px; background:#f9fcf9; border-radius:12px; border:1px solid #e1eee1;">
         <p style="margin:0 0 10px; color:#316431; font-weight:bold; font-size:16px;">Delivery Details</p>
         <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Delivery Day:</strong> ${deliveryDay || 'Tuesday'}</p>
+        <p style="margin:0 0 10px; color:#316431; font-size:14px; font-weight:bold; background:#eef5ee; padding:10px 12px; border-radius:8px;">Your order will be delivered on ${deliveryDateStr} between 8am–12pm.</p>
         <p style="margin:0 0 5px; color:#555; font-size:14px;"><strong>Delivery Address:</strong><br/>${address}</p>
       </div>
     `

@@ -66,7 +66,7 @@
   background: rgba(245,241,234,0.96) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-bottom: 2px solid #000000;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 .headerBg { display: none; }
 .headerInner {
@@ -112,10 +112,10 @@
   background: #4a4a4a !important; border: none;
   color: #ffffff; font-size: 14px; font-weight: 500;
   cursor: pointer; transition: all 0.2s; position: relative; margin-left: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-.cartBtn:hover { background: #2a2a2a !important; color: #ffffff; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
-.cartBtnActive { background: #1a1a1a !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(0,0,0,0.3) !important; }
+.cartBtn:hover { background: #2a2a2a !important; color: #ffffff; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.16); }
+.cartBtnActive { background: #1a1a1a !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(0,0,0,0.2) !important; }
 .badge {
   background: #ffffff !important; color: #1a1a1a;
   width: 18px; height: 18px; border-radius: 50%;
@@ -279,9 +279,9 @@
   background: #1a1a1a !important; color: white;
   border: none; padding: 14px 30px; border-radius: 100px;
   font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.14);
 }
-.heroCta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); background: #333 !important; }
+.heroCta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.2); background: #333 !important; }
 .heroStats {
   display: flex; gap: 44px; margin-top: 52px;
   padding-top: 36px; border-top: 1px solid var(--border);
@@ -386,19 +386,19 @@
   background: #4a4a4a !important; color: #ffffff;
   font-size: 13px; font-weight: 500; cursor: pointer;
   transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   letter-spacing: 0.3px;
 }
 .catBtn:hover {
   background: #333333 !important;
   color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.14);
 }
 .catActive {
   background: #1a1a1a !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
   transform: translateY(-1px);
 }
 
@@ -424,11 +424,11 @@
   background: #2a2a2a !important; color: #ffffff;
   border: none; padding: 15px 28px; border-radius: 100px;
   font-size: 15px; font-weight: 600; cursor: pointer;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
   transition: all 0.2s; white-space: nowrap;
   letter-spacing: 0.2px;
 }
-.orderBtn:hover { background: #111111 !important; transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,0.45); }
+.orderBtn:hover { background: #111111 !important; transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,0.3); }
 .orderBtnDivider { width: 1px; height: 16px; background: rgba(255,255,255,0.25); }
 
 @media (max-width: 900px) {

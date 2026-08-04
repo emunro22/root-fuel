@@ -317,7 +317,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
 
         {/* Delivery banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
-          <strong>Two delivery days every week.</strong>{' '}
+          <strong>Orders are delivered 8am–12pm on your delivery date.</strong>{' '}
           Tuesday (order Wed–Sat) · Friday (order Sat–Tue).
         </div>
 
@@ -427,7 +427,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
               </h1>
               <p className={styles.heroSub}>
                 Meal prep and catering services. Performance nutrition, rooted in nature.
-                Locally sourced, whole food focussed, created for those who demand more from what they eat  
+                Locally sourced, whole food focussed, created for those who demand more from what they eat.
               </p>
 
               {/* Countdown Timers */}
@@ -682,22 +682,6 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         {/* Menu */}
         <div style={{ background: CREAM, width: '100%' }}>
           <main id="menu" style={{ background: CREAM, maxWidth: '1180px', margin: '0 auto', padding: '60px 28px 110px', scrollMarginTop: '70px' }}>
-
-            {/* Locked banner inside menu section */}
-            {locked && (
-              <div style={{
-                background: '#fff3f3',
-                border: '1px solid rgba(180,30,30,0.2)',
-                borderRadius: '12px',
-                padding: '18px 24px',
-                marginBottom: '32px',
-                textAlign: 'center',
-                color: '#b41e1e',
-                fontWeight: 500,
-                fontSize: '15px',
-              }}>
-                {lockReason || "Orders are currently closed while we fulfil this week's batch."}              </div>
-            )}
 
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Our <span className={styles.sectionTitleSub}>Menu</span></h2>
