@@ -16,24 +16,19 @@ function getLockStatus(holidays) {
         label: h.label,
         reopens: to.toISOString(),
         tuesday: { open: false },
-        friday:  { open: false },
       };
     }
   }
 
-  // 2. Two delivery windows
-  //    Tuesday delivery: order Wed(3) → Sat(6) midnight
-  //    Friday  delivery: order Sat(6) → Tue(2) midnight
+  // 2. Delivery window: Tuesday delivery, order Wed(3) → Sat(6) midnight
   const day = now.getDay();
 
   const tuesdayOpen = day >= 3 && day <= 6;
-  const fridayOpen  = day === 6 || day <= 2;
 
   const result = {
     locked: false,
     source: 'open',
     tuesday: { open: tuesdayOpen },
-    friday:  { open: fridayOpen },
   };
 
   if (tuesdayOpen) {
@@ -44,18 +39,9 @@ function getLockStatus(holidays) {
     result.tuesday.deadline = target.toISOString();
   }
 
-  if (fridayOpen) {
-    const daysUntilTue = (2 - day + 7) % 7;
-    const target = new Date(now);
-    target.setDate(now.getDate() + daysUntilTue);
-    target.setHours(23, 59, 59, 999);
-    result.friday.deadline = target.toISOString();
-  }
-
-  const parts = [];
-  if (tuesdayOpen) parts.push('Tuesday (order by Saturday midnight)');
-  if (fridayOpen)  parts.push('Friday (order by Tuesday midnight)');
-  result.reason = `Ordering is open for ${parts.join(' and ')} delivery.`;
+  result.reason = tuesdayOpen
+    ? 'Ordering is open for Tuesday (order by Saturday midnight) delivery.'
+    : 'Ordering is currently closed. It reopens Wednesday.';
 
   return result;
 }

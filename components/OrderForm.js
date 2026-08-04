@@ -7,7 +7,6 @@ const ORDER_TYPES = [
 ];
 
 const TUESDAY_SLOTS = ['13:00', '16:00'];
-const FRIDAY_SLOTS  = ['13:00'];
 
 // Origin: All Tots Nursery, 64 Cowdenhill Rd, Glasgow G13 2HE
 const ORIGIN_LAT = 55.8821;
@@ -80,10 +79,10 @@ function loadSavedFormState() {
   }
 }
 
-export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
-  const availableDays = [];
-  if (tuesdayOpen) availableDays.push('Tuesday');
-  if (fridayOpen)  availableDays.push('Friday');
+const DELIVERY_DAY = 'Tuesday';
+
+export default function OrderForm({ cart, onClose, tuesdayOpen }) {
+  const availableDays = tuesdayOpen ? [DELIVERY_DAY] : [];
 
   // Resume any in-progress order details saved before the customer left for payment
   const [saved] = useState(() => loadSavedFormState());
@@ -93,9 +92,8 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
-  // Delivery day — default to first available
-  const [deliveryDay, setDeliveryDay] = useState(() => saved?.deliveryDay || availableDays[0] || 'Tuesday');
-  const collectionSlots = deliveryDay === 'Friday' ? FRIDAY_SLOTS : TUESDAY_SLOTS;
+  const deliveryDay = DELIVERY_DAY;
+  const collectionSlots = TUESDAY_SLOTS;
 
   // Collection slot
   const [collectionSlot, setCollectionSlot] = useState(() => saved?.collectionSlot || '');
@@ -212,7 +210,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
 
   const validate = () => {
     if (!availableDays.includes(deliveryDay))
-      return `${deliveryDay} ordering is now closed. Please select a different delivery day.`;
+      return 'Tuesday ordering is now closed. Please check back when ordering reopens.';
     if (!form.name.trim())                                return 'Please enter your name';
     if (!form.email.trim() || !form.email.includes('@'))  return 'Please enter a valid email';
     if (!form.phone.trim())                               return 'Please enter your phone number';
@@ -293,7 +291,6 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                       setAddressError('');
                       setAddressDistance(null);
                       setCollectionSlot('');
-                      setDeliveryDay(availableDays[0] || 'Tuesday');
                     }}
                   >
                     <span className={styles.typeIcon}>{t.icon}</span>
@@ -301,40 +298,25 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                   </button>
                 ))}
               </div>
-              {/* Delivery day selector */}
+              {/* Delivery day status */}
               <div style={{ marginTop: '14px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: '#3d5239', display: 'block', marginBottom: '8px' }}>
-                  {orderType === 'pickup' ? 'Collection Day *' : 'Delivery Day *'}
+                  {orderType === 'pickup' ? 'Collection Day' : 'Delivery Day'}
                 </span>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {['Tuesday', 'Friday'].map(day => {
-                    const isAvailable = availableDays.includes(day);
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        disabled={!isAvailable}
-                        onClick={() => { setDeliveryDay(day); setCollectionSlot(''); }}
-                        style={{
-                          flex: 1,
-                          padding: '12px 8px',
-                          borderRadius: '10px',
-                          border: deliveryDay === day ? '2px solid #2d6b27' : '2px solid #d4e6d0',
-                          background: deliveryDay === day ? '#2d6b27' : isAvailable ? '#fff' : '#f5f5f3',
-                          color: deliveryDay === day ? '#fff' : isAvailable ? '#3d5239' : '#8a9e87',
-                          fontSize: '15px',
-                          fontWeight: 600,
-                          cursor: isAvailable ? 'pointer' : 'default',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        {day}
-                        {!isAvailable && <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, marginTop: '2px' }}>
-                          {day === 'Tuesday' ? 'Opens Wednesday' : 'Opens Saturday'}
-                        </span>}
-                      </button>
-                    );
-                  })}
+                <div style={{
+                  padding: '12px 8px',
+                  borderRadius: '10px',
+                  border: tuesdayOpen ? '2px solid #2d6b27' : '2px solid #d4e6d0',
+                  background: tuesdayOpen ? '#2d6b27' : '#f5f5f3',
+                  color: tuesdayOpen ? '#fff' : '#8a9e87',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}>
+                  Tuesday
+                  {!tuesdayOpen && <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, marginTop: '2px' }}>
+                    Opens Wednesday
+                  </span>}
                 </div>
               </div>
 
@@ -361,7 +343,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                       All Tots Nursery<br />64 Cowdenhill Road<br />Glasgow, G13 2HE
                     </p>
                     <p style={{ fontSize: '12px', color: '#7a8f77', marginTop: '4px' }}>
-                      Ready for collection every Tuesday and Friday.
+                      Ready for collection every Tuesday.
                     </p>
                   </div>
                 </div>
@@ -375,9 +357,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, fridayOpen }) {
                 <div className={styles.section}>
                   <span className={styles.sectionLabel}>Collection Time Slot *</span>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                    {collectionSlots.length === 1
-                      ? 'Friday collection is at 13:00 only.'
-                      : 'Food is made to order — please do not arrive before your chosen slot.'}
+                    Food is made to order — please do not arrive before your chosen slot.
                   </p>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     {collectionSlots.map(slot => (

@@ -4,7 +4,7 @@ import { appendOrder } from '../../lib/sheets';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-function isOrderingLocked(deliveryDay) {
+function isOrderingLocked() {
   const now = new Date();
   const ukParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
@@ -19,12 +19,6 @@ function isOrderingLocked(deliveryDay) {
   const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
 
-  if (deliveryDay === 'Friday') {
-    if (day === 'Wed' || day === 'Thu' || day === 'Fri') return true;
-    if (day === 'Tue' && hour === 23 && min === 59 && sec === 59) return true;
-    return false;
-  }
-
   if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
   if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
   return false;
@@ -32,13 +26,10 @@ function isOrderingLocked(deliveryDay) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay } = req.body;
+  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot } = req.body;
 
-  if (isOrderingLocked(deliveryDay || 'Tuesday')) {
-    const msg = deliveryDay === 'Friday'
-      ? 'Friday delivery ordering is closed. Orders for Friday are accepted Saturday through Tuesday midnight.'
-      : 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.';
-    return res.status(403).json({ error: msg });
+  if (isOrderingLocked()) {
+    return res.status(403).json({ error: 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.' });
   }
 
   if (!items?.length || !customer?.email || !customer?.name) {

@@ -45,16 +45,13 @@ function getInitials(name) {
 }
 
 /**
- * Ordering schedule (two delivery windows):
+ * Ordering schedule (single delivery window):
  *   Tuesday delivery: order Wed(3) → Sat(6) midnight
- *   Friday  delivery: order Sat(6) → Tue(2) midnight
  *
- * The site is always open for at least one window (they overlap on Wednesday).
- * Only holiday closures lock both windows.
+ * Only holiday closures lock the window.
  *
  * Collection slots:
  *   Tuesday: 13:00, 16:00
- *   Friday:  13:00
  */
 
 function computeTimeLeft(diff) {
@@ -71,9 +68,7 @@ function useCountdown() {
   const [lockReason, setLockReason] = useState('');
   const [lockSource, setLockSource] = useState('');
   const [tuesdayOpen, setTuesdayOpen] = useState(false);
-  const [fridayOpen, setFridayOpen] = useState(false);
   const [tuesdayTimeLeft, setTuesdayTimeLeft] = useState(null);
-  const [fridayTimeLeft, setFridayTimeLeft] = useState(null);
 
   useEffect(() => {
     let intervalId;
@@ -87,18 +82,15 @@ function useCountdown() {
         setLockReason(data.reason || '');
         setLockSource(data.source || '');
         setTuesdayOpen(data.tuesday?.open || false);
-        setFridayOpen(data.friday?.open || false);
 
         clearInterval(intervalId);
 
         if (data.locked) {
           setTuesdayTimeLeft(null);
-          setFridayTimeLeft(null);
           return;
         }
 
         const tueDl = data.tuesday?.deadline ? new Date(data.tuesday.deadline) : null;
-        const friDl = data.friday?.deadline  ? new Date(data.friday.deadline)  : null;
 
         const tick = () => {
           const now = new Date();
@@ -109,13 +101,6 @@ function useCountdown() {
           } else {
             setTuesdayTimeLeft(null);
           }
-          if (friDl) {
-            const diff = friDl - now;
-            if (diff <= 0) { fetchStatus(); return; }
-            setFridayTimeLeft(computeTimeLeft(diff));
-          } else {
-            setFridayTimeLeft(null);
-          }
         };
 
         tick();
@@ -124,7 +109,6 @@ function useCountdown() {
         const day = new Date().getDay();
         setLocked(false);
         setTuesdayOpen(day >= 3 && day <= 6);
-        setFridayOpen(day === 6 || day <= 2);
       }
     }
 
@@ -137,7 +121,7 @@ function useCountdown() {
     };
   }, []);
 
-  return { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft, fridayTimeLeft };
+  return { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft };
 }
 
 export default function Home() {
@@ -162,7 +146,7 @@ export default function Home() {
   const [promos,         setPromos]         = useState([]);
   const [copiedCode,     setCopiedCode]     = useState('');
 
-const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft, fridayTimeLeft } = useCountdown();
+const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCountdown();
 
   // ── Hero food image carousel ──────────────────────────────────────────────
   // Add your food photo filenames to /public/food/ and list them here.
@@ -282,10 +266,9 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
   // Items with no delivery day assigned stay visible every day (keeps legacy
-  // items showing until an admin assigns them). Tagged items only show for
-  // one active delivery day at a time — the two ordering windows overlap on
-  // Saturday, and Tuesday's menu takes priority that day.
-  const activeMenuDay = tuesdayOpen ? 'tuesday' : fridayOpen ? 'friday' : null;
+  // items showing until an admin assigns them). Tagged items only show while
+  // Tuesday ordering is open.
+  const activeMenuDay = tuesdayOpen ? 'tuesday' : null;
   const visibleMenu = menu.filter(i => {
     if (!i.days || i.days.length === 0) return true;
     return activeMenuDay ? i.days.includes(activeMenuDay) : false;
@@ -318,7 +301,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         {/* Delivery banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
           <strong>Orders are delivered 8am–12pm on your delivery date.</strong>{' '}
-          Tuesday (order Wed–Sat) · Friday (order Sat–Tue).
+          Tuesday delivery (order Wed–Sat).
         </div>
 
 
@@ -494,53 +477,6 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
                         textAlign: 'center',
                       }}>
                         <span style={{ fontSize: '12px', color: '#8a9e87' }}>Tuesday delivery — ordering opens Wednesday</span>
-                      </div>
-                    ) : null}
-
-                    {/* Friday delivery countdown */}
-                    {fridayOpen && fridayTimeLeft ? (
-                      <div style={{
-                        background: 'rgba(45,107,39,0.08)',
-                        border: '1px solid rgba(45,107,39,0.2)',
-                        borderRadius: '16px',
-                        padding: '16px 20px',
-                      }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
-                          Friday delivery — order by Tuesday midnight
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          {[
-                            { val: fridayTimeLeft.days,    label: 'Days' },
-                            { val: fridayTimeLeft.hours,   label: 'Hrs' },
-                            { val: fridayTimeLeft.minutes, label: 'Min' },
-                            { val: fridayTimeLeft.seconds, label: 'Sec' },
-                          ].map((t, i) => (
-                            <div key={i} style={{ textAlign: 'center', flex: 1 }}>
-                              <div style={{
-                                background: WHITE,
-                                borderRadius: '10px',
-                                padding: '8px 4px 6px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                                fontFamily: 'monospace',
-                                fontSize: 'clamp(18px, 3.5vw, 26px)',
-                                fontWeight: 700,
-                                color: '#1a2418',
-                                lineHeight: 1,
-                              }}>{pad(t.val)}</div>
-                              <div style={{ fontSize: '9px', color: '#8a9e87', marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : !fridayOpen ? (
-                      <div style={{
-                        background: 'rgba(0,0,0,0.03)',
-                        border: '1px solid rgba(0,0,0,0.06)',
-                        borderRadius: '12px',
-                        padding: '12px 16px',
-                        textAlign: 'center',
-                      }}>
-                        <span style={{ fontSize: '12px', color: '#8a9e87' }}>Friday delivery — ordering opens Saturday</span>
                       </div>
                     ) : null}
                   </>
@@ -824,7 +760,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
         )}
 
         {showCart  && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
-        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} tuesdayOpen={tuesdayOpen} fridayOpen={fridayOpen} />}
+        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} tuesdayOpen={tuesdayOpen} />}
         {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
 
         {/* Catering Banner */}
@@ -894,8 +830,8 @@ const { locked, lockReason, lockSource, tuesdayOpen, fridayOpen, tuesdayTimeLeft
             <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '200ms' }}>
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
-                <strong>Two delivery days</strong><br />
-                Tuesday (order Wed–Sat) · Friday (order Sat–Tue).
+                <strong>Delivery day</strong><br />
+                Tuesday (order Wed–Sat).
               </p>
             </div>
           </div>

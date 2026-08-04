@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const MIN_MILES_FOR_MINIMUM_ORDER = 5;
 const MINIMUM_ORDER_BEYOND_5_MILES = 30.00;
 
-function isOrderingLocked(deliveryDay) {
+function isOrderingLocked() {
   const now = new Date();
   const ukParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
@@ -23,14 +23,7 @@ function isOrderingLocked(deliveryDay) {
   const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
   const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
 
-  if (deliveryDay === 'Friday') {
-    // Friday delivery: open Sat → Tue midnight
-    if (day === 'Wed' || day === 'Thu' || day === 'Fri') return true;
-    if (day === 'Tue' && hour === 23 && min === 59 && sec === 59) return true;
-    return false;
-  }
-
-  // Tuesday delivery (default): open Wed → Sat midnight
+  // Tuesday delivery: open Wed → Sat midnight
   if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
   if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
   return false;
@@ -41,11 +34,8 @@ export default async function handler(req, res) {
 
   const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay, distanceMiles } = req.body;
 
-  if (isOrderingLocked(deliveryDay || 'Tuesday')) {
-    const msg = deliveryDay === 'Friday'
-      ? 'Friday delivery ordering is closed. Orders for Friday are accepted Saturday through Tuesday midnight.'
-      : 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.';
-    return res.status(403).json({ error: msg });
+  if (isOrderingLocked()) {
+    return res.status(403).json({ error: 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.' });
   }
 
   if (!items?.length || !customer?.email || !customer?.name) {

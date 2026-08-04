@@ -44,7 +44,7 @@ function buildCustomerEmail({ orderId, name, items, total, orderType, address, n
   `).join('');
 
   const deliveryDateStr = orderType === 'delivery'
-    ? formatDeliveryDate(nextDeliveryDate(deliveryDay || 'Tuesday'))
+    ? formatDeliveryDate(nextDeliveryDate())
     : null;
 
   const instructionsBlock = orderType === 'delivery'
@@ -266,7 +266,7 @@ export default async function handler(req, res) {
     /* Queue "how did we do" review follow-up for delivery orders */
     if (orderType === 'delivery') {
       try {
-        const deliveryDate = nextDeliveryDate(order.deliveryDay);
+        const deliveryDate = nextDeliveryDate();
         const followupTtl = 60 * 60 * 24 * 21; // 21 days — safety net if cron is ever missed
         await kv.set(`review_order:${orderId}`, { name: order.name, email: order.email }, { ex: followupTtl });
         await kv.lpush(`review_followups:${deliveryDate}`, orderId);

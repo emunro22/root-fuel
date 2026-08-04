@@ -41,7 +41,7 @@ export default function AdminPage() {
   const [menuItems,    setMenuItems]    = useState([]);
   const [menuLoading,  setMenuLoading]  = useState(false);
   const [menuFilter,   setMenuFilter]   = useState('All');
-  const [menuDayFilter, setMenuDayFilter] = useState('All'); // 'All' | 'tuesday' | 'friday' | 'unassigned'
+  const [menuDayFilter, setMenuDayFilter] = useState('All'); // 'All' | 'tuesday' | 'friday' (legacy) | 'unassigned'
   const [editingItem,  setEditingItem]  = useState(null);  // item being edited (includes rowNumber)
   const [showAddForm,  setShowAddForm]  = useState(false);
   const [newItem,      setNewItem]      = useState(EMPTY_ITEM);
@@ -293,7 +293,7 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json();
         setMenuItems(data.items || []);
-        const dayLabel = day === 'tuesday' ? 'Tuesday' : 'Friday';
+        const dayLabel = day === 'tuesday' ? 'Tuesday' : 'Friday (legacy)';
         showToast(`"${item.name}" ${nextDays.includes(day) ? `added to ${dayLabel} delivery` : `removed from ${dayLabel} delivery`}.`);
       } else { showToast('Failed to update.', true); }
     } catch { showToast('Network error.', true); }
@@ -693,8 +693,8 @@ export default function AdminPage() {
                 {[
                   { id:'All',         label:'All Days' },
                   { id:'tuesday',     label:'🟢 Tuesday' },
-                  { id:'friday',      label:'🟠 Friday' },
                   { id:'unassigned',  label:'Unassigned' },
+                  { id:'friday',      label:'⚠️ Friday (legacy)' },
                 ].map(d => (
                   <button
                     key={d.id}
@@ -755,7 +755,7 @@ export default function AdminPage() {
                               <span style={{ fontSize:'13px', fontWeight:600, color:'#374151' }}>£{Number(item.price).toFixed(2)}</span>
                               {!item.available && <span style={{ background:'#fef2f2', color:'#b91c1c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fecaca' }}>Unavailable</span>}
                               {(item.days || []).includes('tuesday') && <span style={{ background:'#eaf4e8', color:'#2d6b27', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid rgba(45,107,39,0.25)' }}>Tuesday</span>}
-                              {(item.days || []).includes('friday') && <span style={{ background:'#fff7ed', color:'#c2410c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fed7aa' }}>Friday</span>}
+                              {(item.days || []).includes('friday') && <span style={{ background:'#fff7ed', color:'#c2410c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fed7aa' }} title="Friday delivery has been removed — this item won't show on the site until re-tagged">⚠️ Friday (legacy)</span>}
                             </div>
                             {item.description && (
                               <p style={{ fontSize:'12px', color:'#9ca3af', marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.description}</p>
@@ -771,14 +771,16 @@ export default function AdminPage() {
                             >
                               {(item.days||[]).includes('tuesday') ? '✓ Tuesday' : '+ Tuesday'}
                             </button>
-                            <button
-                              onClick={()=>toggleDay(item, 'friday')}
-                              disabled={!!menuSaving}
-                              title={(item.days||[]).includes('friday') ? 'Remove from Friday delivery' : 'Add to Friday delivery'}
-                              style={{ background:(item.days||[]).includes('friday')?'#c2410c':'transparent', border:`1px solid ${(item.days||[]).includes('friday')?'#c2410c':'rgba(0,0,0,0.12)'}`, color:(item.days||[]).includes('friday')?'#fff':'#374151', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:menuSaving?'not-allowed':'pointer', whiteSpace:'nowrap' }}
-                            >
-                              {(item.days||[]).includes('friday') ? '✓ Friday' : '+ Friday'}
-                            </button>
+                            {(item.days||[]).includes('friday') && (
+                              <button
+                                onClick={()=>toggleDay(item, 'friday')}
+                                disabled={!!menuSaving}
+                                title="Friday delivery has been removed — clear this legacy tag"
+                                style={{ background:'#c2410c', border:'1px solid #c2410c', color:'#fff', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:menuSaving?'not-allowed':'pointer', whiteSpace:'nowrap' }}
+                              >
+                                ✕ Remove Friday
+                              </button>
+                            )}
                             <button
                               onClick={()=>setEditingItem({...item})}
                               disabled={!!menuSaving}
@@ -1170,11 +1172,10 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
         <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
           {[
             { id:'tuesday', label:'Add to Tuesday delivery' },
-            { id:'friday',  label:'Add to Friday delivery' },
           ].map(d => {
             const active = (item.days || []).includes(d.id);
             return (
-              <label key={d.id} style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'13px', color: active ? '#111' : '#6b7280', background: active ? (d.id==='tuesday'?'#eaf4e8':'#fff7ed') : '#f9fafb', border:`1px solid ${active ? (d.id==='tuesday'?'#2d6b27':'#c2410c') : 'rgba(0,0,0,0.1)'}`, borderRadius:'10px', padding:'8px 14px' }}>
+              <label key={d.id} style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'13px', color: active ? '#111' : '#6b7280', background: active ? '#eaf4e8' : '#f9fafb', border:`1px solid ${active ? '#2d6b27' : 'rgba(0,0,0,0.1)'}`, borderRadius:'10px', padding:'8px 14px' }}>
                 <input
                   type="checkbox"
                   checked={active}
@@ -1188,7 +1189,7 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
             );
           })}
         </div>
-        <p style={{ fontSize:'11px', color:'#9ca3af', marginTop:'6px' }}>Leave both unchecked to show this item every delivery day.</p>
+        <p style={{ fontSize:'11px', color:'#9ca3af', marginTop:'6px' }}>Leave unchecked to show this item every delivery day.</p>
       </div>
 
       <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
