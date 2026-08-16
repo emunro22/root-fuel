@@ -262,6 +262,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
     });
   }, []);
 
+  // Checkout rejected these because they've fallen off the live menu since
+  // they were added to a (possibly days-old) cart — drop them so the
+  // customer's next attempt only contains items that still exist.
+  const removeStaleItems = useCallback((names) => {
+    setCart(prev => prev.filter(c => !names.includes(c.name)));
+  }, []);
+
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
@@ -760,7 +767,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
         )}
 
         {showCart  && <Cart cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onCheckout={() => { setShowCart(false); setShowForm(true); }} />}
-        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} tuesdayOpen={tuesdayOpen} />}
+        {showForm  && !locked && <OrderForm cart={cart} onClose={() => setShowForm(false)} tuesdayOpen={tuesdayOpen} onRemoveStaleItems={removeStaleItems} />}
         {showCatering && <CateringModal onClose={() => setShowCatering(false)} />}
 
         {/* Catering Banner */}

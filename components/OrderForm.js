@@ -81,7 +81,7 @@ function loadSavedFormState() {
 
 const DELIVERY_DAY = 'Tuesday';
 
-export default function OrderForm({ cart, onClose, tuesdayOpen }) {
+export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleItems }) {
   const availableDays = tuesdayOpen ? [DELIVERY_DAY] : [];
 
   // Resume any in-progress order details saved before the customer left for payment
@@ -256,6 +256,9 @@ export default function OrderForm({ cart, onClose, tuesdayOpen }) {
       if (data.url) {
         window.location.href = data.url;
       } else {
+        if (res.status === 409 && data.staleItems?.length) {
+          onRemoveStaleItems?.(data.staleItems);
+        }
         setError(data.error || 'Something went wrong. Please try again.');
         setLoading(false);
       }

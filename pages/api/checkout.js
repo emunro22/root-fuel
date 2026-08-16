@@ -2,6 +2,7 @@
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { kv } from '@vercel/kv';
+import { getMenuItems } from '../../lib/sheets';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -41,6 +42,32 @@ export default async function handler(req, res) {
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
+
+  // ── Re-validate cart items against the live menu ──────────────────────────
+  // Carts persist in the browser's localStorage for up to 7 days, and the
+  // menu is only fetched once per page load. If the Sheet changes (new week's
+  // menu) while a stale cart or tab is still around, the client could submit
+  // items/prices that no longer exist on the live menu. Reject those here
+  // rather than trusting whatever the browser sends.
+  let liveMenu;
+  try {
+    liveMenu = await getMenuItems();
+  } catch (e) {
+    console.error('[checkout] Failed to load live menu for validation:', e.message);
+    return res.status(500).json({ error: 'Could not verify menu. Please try again.' });
+  }
+  const liveByName = new Map(liveMenu.map(m => [m.name, m]));
+  const staleItems = items.filter(i => {
+    const live = liveByName.get(i.name);
+    return !live || Math.abs(live.price - i.price) > 0.001;
+  });
+  if (staleItems.length) {
+    return res.status(409).json({
+      error: 'Some items in your cart are no longer on the current menu, so we removed them. Please review your order and try again.',
+      staleItems: staleItems.map(i => i.name),
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   if (orderType === 'delivery' && distanceMiles != null && distanceMiles > MIN_MILES_FOR_MINIMUM_ORDER) {
     const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
