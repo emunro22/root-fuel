@@ -386,6 +386,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 <button className={styles.navLink} onClick={scrollToAbout}>About</button>
                 <button className={styles.navLink} onClick={() => setShowCatering(true)}>Catering</button>
                 <Link className={styles.navLink} href="/blog">Blog</Link>
+                <a className={styles.navLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">Instagram</a>
               </nav>
               <button
                 className={`${styles.cartBtn} ${cartBounce ? styles.bounce : ''} ${cartCount > 0 ? styles.cartBtnActive : ''}`}
@@ -438,6 +439,9 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 <Link className={styles.mobileAboutLink} href="/blog" onClick={() => setMobileMenuOpen(false)}>
                   Blog
                 </Link>
+                <a className={styles.mobileAboutLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
+                  Instagram
+                </a>
                 {cartCount > 0 && (
                   <div className={styles.mobileCartBar} onClick={() => { setShowCart(true); setMobileMenuOpen(false); }}>
                     <div className={styles.mobileCartBarLeft}>
