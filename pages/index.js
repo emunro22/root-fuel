@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import styles from '../styles/Home.module.css';
 import Cart from '../components/Cart';
 import MenuItem from '../components/MenuItem';
 import OrderForm from '../components/OrderForm';
 import CateringModal from '../components/CateringModal';
+import InstagramEmbed from '../components/InstagramEmbed';
+import { SITE_URL, SITE_NAME, ADDRESS, INSTAGRAM_URL, GOOGLE_REVIEW_URL, FEATURED_INSTAGRAM_POSTS } from '../lib/site';
 
 const CATEGORIES = [
   { name: 'Starters',       icon: '' },
@@ -293,6 +296,51 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
 
   const pad = n => String(n).padStart(2, '0');
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'FoodEstablishment',
+        '@id': `${SITE_URL}/#business`,
+        name: SITE_NAME,
+        description: 'Performance nutrition, rooted in nature. Whole-food meal prep and catering, delivered in Glasgow.',
+        url: SITE_URL,
+        image: `${SITE_URL}/logo.png`,
+        logo: `${SITE_URL}/logo.png`,
+        priceRange: '££',
+        servesCuisine: ['Whole Food', 'Meal Prep', 'Healthy'],
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: ADDRESS.streetAddress,
+          addressLocality: ADDRESS.addressLocality,
+          postalCode: ADDRESS.postalCode,
+          addressCountry: ADDRESS.addressCountry,
+        },
+        areaServed: {
+          '@type': 'City',
+          name: 'Glasgow',
+        },
+        hasMenu: `${SITE_URL}/#menu`,
+        sameAs: [INSTAGRAM_URL, GOOGLE_REVIEW_URL],
+        founder: {
+          '@type': 'Person',
+          name: 'Samantha Hamilton',
+        },
+      },
+      {
+        '@type': 'Service',
+        serviceType: 'Catering',
+        name: 'Root & Fuel Catering',
+        description: 'Bespoke whole-food catering for corporate events, sports teams and private functions in Glasgow.',
+        provider: { '@id': `${SITE_URL}/#business` },
+        areaServed: {
+          '@type': 'City',
+          name: 'Glasgow',
+        },
+      },
+    ],
+  };
+
   return (
     <>
       <Head>
@@ -302,6 +350,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
         <meta name="description" content="Performance nutrition, rooted in nature. Order online from Root & Fuel, Glasgow." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content={CREAM} />
+        <link rel="canonical" href={SITE_URL} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Root &amp; Fuel — Order Online" />
+        <meta property="og:description" content="Performance nutrition, rooted in nature. Order online from Root & Fuel, Glasgow." />
+        <meta property="og:url" content={SITE_URL} />
+        <meta property="og:image" content={`${SITE_URL}/logo.png`} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
       <div style={{ background: CREAM, minHeight: '100vh', color: '#1a2418' }}>
 
@@ -330,6 +385,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 ))}
                 <button className={styles.navLink} onClick={scrollToAbout}>About</button>
                 <button className={styles.navLink} onClick={() => setShowCatering(true)}>Catering</button>
+                <Link className={styles.navLink} href="/blog">Blog</Link>
               </nav>
               <button
                 className={`${styles.cartBtn} ${cartBounce ? styles.bounce : ''} ${cartCount > 0 ? styles.cartBtnActive : ''}`}
@@ -379,6 +435,9 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
                   Catering Services
                 </button>
+                <Link className={styles.mobileAboutLink} href="/blog" onClick={() => setMobileMenuOpen(false)}>
+                  Blog
+                </Link>
                 {cartCount > 0 && (
                   <div className={styles.mobileCartBar} onClick={() => { setShowCart(true); setMobileMenuOpen(false); }}>
                     <div className={styles.mobileCartBarLeft}>
@@ -750,6 +809,53 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
           </div>
         </section>
 
+        {/* Follow us on Instagram */}
+        <section style={{ background: CREAM, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
+          <span className={`${styles.aboutLabel} ${styles.reveal}`}>Instagram</span>
+          <h2 className={styles.reveal} style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(30px, 4.5vw, 40px)',
+            fontWeight: 400,
+            color: '#1a2418',
+            margin: '6px 0 14px',
+            transitionDelay: '80ms',
+          }}>
+            Follow us <span style={{ color: GREEN, fontStyle: 'italic' }}>@rootandfuel</span>
+          </h2>
+          <p className={styles.reveal} style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7, transitionDelay: '140ms' }}>
+            Behind-the-scenes prep, new dishes and the odd delivery-day chaos — straight from our Instagram.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '24px',
+            maxWidth: '1100px',
+            margin: '0 auto 36px',
+          }}>
+            {FEATURED_INSTAGRAM_POSTS.map(url => (
+              <InstagramEmbed key={url} url={url} />
+            ))}
+          </div>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.popBtn}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: 'transparent', color: GREEN,
+              border: `1px solid ${GREEN}`, padding: '12px 26px',
+              borderRadius: '100px', fontSize: '14px', fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Follow on Instagram
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </section>
+
         {/* Sticky order — hidden when locked */}
         {cartCount > 0 && !mobileMenuOpen && !locked && (
           <div className={styles.stickyOrder}>
@@ -833,6 +939,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
               <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
               <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
               <button className={styles.footerLink} onClick={() => setShowCatering(true)}>Catering Services</button>
+              <Link className={styles.footerLink} href="/blog">Blog</Link>
             </div>
             <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '200ms' }}>
               <p className={styles.footerColTitle}>Ordering</p>
