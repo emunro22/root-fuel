@@ -150,6 +150,7 @@ export default function Home() {
   const [copiedCode,     setCopiedCode]     = useState('');
 
 const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCountdown();
+  const orderingClosed = locked || !tuesdayOpen;
 
   // ── Hero food image carousel ──────────────────────────────────────────────
   // Add your food photo filenames to /public/food/ and list them here.
@@ -247,7 +248,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
   }, [mobileMenuOpen, showCart, showForm]);
 
   const addToCart = useCallback((item) => {
-    if (locked) return;
+    if (orderingClosed) return;
     setCart(prev => {
       const existing = prev.find(c => c.name === item.name);
       if (existing) return prev.map(c => c.name === item.name ? { ...c, quantity: c.quantity + 1 } : c);
@@ -255,7 +256,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
     });
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 400);
-  }, [locked]);
+  }, [orderingClosed]);
 
   const removeFromCart = useCallback((item) => {
     setCart(prev => {
@@ -501,56 +502,57 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {/* Tuesday delivery countdown */}
-                    {tuesdayOpen && tuesdayTimeLeft ? (
-                      <div style={{
-                        background: 'rgba(45,107,39,0.08)',
-                        border: '1px solid rgba(45,107,39,0.2)',
-                        borderRadius: '16px',
-                        padding: '16px 20px',
-                      }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
-                          Tuesday delivery — order by Saturday midnight
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          {[
-                            { val: tuesdayTimeLeft.days,    label: 'Days' },
-                            { val: tuesdayTimeLeft.hours,   label: 'Hrs' },
-                            { val: tuesdayTimeLeft.minutes, label: 'Min' },
-                            { val: tuesdayTimeLeft.seconds, label: 'Sec' },
-                          ].map((t, i) => (
-                            <div key={i} style={{ textAlign: 'center', flex: 1 }}>
-                              <div style={{
-                                background: WHITE,
-                                borderRadius: '10px',
-                                padding: '8px 4px 6px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                                fontFamily: 'monospace',
-                                fontSize: 'clamp(18px, 3.5vw, 26px)',
-                                fontWeight: 700,
-                                color: '#1a2418',
-                                lineHeight: 1,
-                              }}>{pad(t.val)}</div>
-                              <div style={{ fontSize: '9px', color: '#8a9e87', marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
-                            </div>
-                          ))}
-                        </div>
+                ) : !tuesdayOpen ? (
+                  <div style={{
+                    background: 'rgba(180,30,30,0.08)',
+                    border: '1px solid rgba(180,30,30,0.2)',
+                    borderRadius: '16px',
+                    padding: '20px 24px',
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#b41e1e', marginBottom: '6px' }}>
+                        Orders Closed
                       </div>
-                    ) : !tuesdayOpen ? (
-                      <div style={{
-                        background: 'rgba(0,0,0,0.03)',
-                        border: '1px solid rgba(0,0,0,0.06)',
-                        borderRadius: '12px',
-                        padding: '12px 16px',
-                        textAlign: 'center',
-                      }}>
-                        <span style={{ fontSize: '12px', color: '#8a9e87' }}>Tuesday delivery — ordering opens Wednesday</span>
+                      <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
+                        Tuesday delivery ordering opens Wednesday and runs through Saturday midnight.
                       </div>
-                    ) : null}
-                  </>
-                )}
+                    </div>
+                  </div>
+                ) : tuesdayTimeLeft ? (
+                  <div style={{
+                    background: 'rgba(45,107,39,0.08)',
+                    border: '1px solid rgba(45,107,39,0.2)',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
+                      Tuesday delivery — order by Saturday midnight
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {[
+                        { val: tuesdayTimeLeft.days,    label: 'Days' },
+                        { val: tuesdayTimeLeft.hours,   label: 'Hrs' },
+                        { val: tuesdayTimeLeft.minutes, label: 'Min' },
+                        { val: tuesdayTimeLeft.seconds, label: 'Sec' },
+                      ].map((t, i) => (
+                        <div key={i} style={{ textAlign: 'center', flex: 1 }}>
+                          <div style={{
+                            background: WHITE,
+                            borderRadius: '10px',
+                            padding: '8px 4px 6px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                            fontFamily: 'monospace',
+                            fontSize: 'clamp(18px, 3.5vw, 26px)',
+                            fontWeight: 700,
+                            color: '#1a2418',
+                            lineHeight: 1,
+                          }}>{pad(t.val)}</div>
+                          <div style={{ fontSize: '9px', color: '#8a9e87', marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               {/* Promo codes box — same style as countdown, only shown when codes are active */}
@@ -715,7 +717,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                     onAdd={() => addToCart(item)}
                     onRemove={() => removeFromCart(item)}
                     delay={i * 60}
-                    locked={locked}
+                    locked={orderingClosed}
                   />
                 ))}
                 {categoryItems.length === 0 && <p className={styles.empty}>Nothing here right now.</p>}
