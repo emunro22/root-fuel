@@ -41,14 +41,38 @@ function buildOrdersCsv(orders) {
   return [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
 }
 
+function buildItemSummary(orders) {
+  const counts = new Map();
+  for (const o of orders) {
+    for (const i of (o.items || [])) {
+      counts.set(i.name, (counts.get(i.name) || 0) + i.quantity);
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, quantity]) => ({ name, quantity }));
+}
+
 function buildDigestEmail(orders) {
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
   const notesOrders = orders.filter(o => o.notes && o.notes.trim());
+  const itemSummary = buildItemSummary(orders);
 
   const notesHtml = notesOrders.length
     ? notesOrders.map(o => `<p style="margin:8px 0; font-size:14px; color:#333;"><strong>${o.name}</strong>: ${o.notes}</p>`).join('')
     : '<p style="margin:8px 0; font-size:14px; color:#888;">No notes this week.</p>';
+
+  const itemSummaryHtml = itemSummary.length
+    ? `<table style="width:100%; border-collapse:collapse;">
+        ${itemSummary.map(i => `
+          <tr>
+            <td style="padding:6px 0; border-bottom:1px solid #eee; color:#333; font-size:14px;">${i.name}</td>
+            <td style="padding:6px 0; border-bottom:1px solid #eee; text-align:right; color:#316431; font-size:14px; font-weight:bold;">${i.quantity}x</td>
+          </tr>
+        `).join('')}
+      </table>`
+    : '<p style="margin:8px 0; font-size:14px; color:#888;">No items this week.</p>';
 
   return {
     subject: `Weekly Orders Report — ${totalOrders} order${totalOrders === 1 ? '' : 's'}, £${totalRevenue.toFixed(2)}`,
@@ -64,6 +88,8 @@ function buildDigestEmail(orders) {
             <p style="margin:5px 0; font-size:15px; color:#333;"><strong>Total Orders:</strong> ${totalOrders}</p>
             <p style="margin:5px 0 15px; font-size:15px; color:#333;"><strong>Total Revenue:</strong> £${totalRevenue.toFixed(2)}</p>
             <p style="margin:0; font-size:13px; color:#888;">Full order details are attached as a CSV file.</p>
+            <h4 style="margin:25px 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Item Summary</h4>
+            ${itemSummaryHtml}
             <h4 style="margin:25px 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Notes &amp; Special Requests</h4>
             ${notesHtml}
           </div>
