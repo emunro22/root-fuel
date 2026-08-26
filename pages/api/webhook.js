@@ -1,7 +1,6 @@
 // pages/api/webhook.js
 import Stripe from 'stripe';
 import { kv } from '@vercel/kv';
-import { appendOrder } from '../../lib/sheets';
 import { Resend } from 'resend';
 import { nextDeliveryDate } from '../../lib/reviewFollowup';
 
@@ -192,9 +191,10 @@ export default async function handler(req, res) {
 
     const total = session.amount_total / 100;
 
-    // ── Write the order to Sheets with status "paid" (single row, never pending) ─
+    // ── Persist the confirmed order permanently in KV and queue it for the
+    //    weekly owner report (replaces the old Google Sheets order ledger) ─
     try {
-      await appendOrder({
+      await kv.set(`order:${orderId}`, {
         orderId,
         status:         'paid',
         type:           order.type,
@@ -208,9 +208,12 @@ export default async function handler(req, res) {
         deliveryFee:    order.deliveryFee,
         notes:          order.notes,
         collectionSlot: order.collectionSlot,
+        deliveryDay:    order.deliveryDay,
+        paidAt:         new Date().toISOString(),
       });
+      await kv.rpush('orders:digest_queue', orderId);
     } catch (e) {
-      console.error('[webhook] Failed to append paid order to Sheets:', e.message);
+      console.error('[webhook] Failed to persist order to KV:', e.message);
     }
     // ──────────────────────────────────────────────────────────────────────
 
