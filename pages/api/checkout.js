@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { kv } from '@vercel/kv';
 import { getMenuItems } from '../../lib/sheets';
+import { hasRedeemed } from '../../lib/promoRedemptions';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -33,7 +34,7 @@ function isOrderingLocked() {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { items, customer, orderType, table, address, notes, promotionCodeId, deliveryFee, collectionSlot, deliveryDay, distanceMiles } = req.body;
+  const { items, customer, orderType, table, address, notes, promoCode, promotionCodeId, deliveryFee, collectionSlot, deliveryDay, distanceMiles } = req.body;
 
   if (isOrderingLocked()) {
     return res.status(403).json({ error: 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.' });
@@ -41,6 +42,15 @@ export default async function handler(req, res) {
 
   if (!items?.length || !customer?.email || !customer?.name) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Re-check redemption server-side — the /api/validate-promo check happens
+  // client-side when the code is applied, but nothing stops a request from
+  // reaching this endpoint with a promotionCodeId that was never re-verified.
+  if (promoCode && promotionCodeId) {
+    if (await hasRedeemed(promoCode, customer.email)) {
+      return res.status(409).json({ error: "You've already redeemed this promo code." });
+    }
   }
 
   // ── Re-validate cart items against the live menu ──────────────────────────
@@ -112,6 +122,8 @@ export default async function handler(req, res) {
         notes:          notes || '',
         collectionSlot: collectionSlot || '',
         deliveryDay:    deliveryDay || 'Tuesday',
+        promoCode:      promoCode || '',
+        promotionCodeId: promotionCodeId || null,
       },
       { ex: 60 * 60 * 24 } // 24 hours
     );

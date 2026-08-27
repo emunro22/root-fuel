@@ -188,12 +188,16 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
     if (!promoCode.trim()) return;
     setPromoError('');
     setPromoResult(null);
+    if (!form.email.trim() || !form.email.includes('@')) {
+      setPromoError('Please enter your email above first');
+      return;
+    }
     setPromoLoading(true);
     try {
       const res = await fetch('/api/validate-promo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode.trim() }),
+        body: JSON.stringify({ code: promoCode.trim(), email: form.email.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -247,6 +251,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
           notes: form.notes,
           collectionSlot: orderType === 'pickup' ? collectionSlot : null,
           deliveryDay,
+          promoCode: promoResult?.code || null,
           promotionCodeId: promoResult?.promotionCodeId || null,
           deliveryFee: orderType === 'delivery' ? (deliveryFee || 0) : 0,
           distanceMiles: orderType === 'delivery' ? addressDistance : null,

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { kv } from '@vercel/kv';
 import { Resend } from 'resend';
 import { nextDeliveryDate } from '../../lib/reviewFollowup';
+import { recordRedemption } from '../../lib/promoRedemptions';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const resend  = new Resend(process.env.RESEND_API_KEY);
@@ -209,9 +210,14 @@ export default async function handler(req, res) {
         notes:          order.notes,
         collectionSlot: order.collectionSlot,
         deliveryDay:    order.deliveryDay,
+        promoCode:      order.promoCode || '',
+        promotionCodeId: order.promotionCodeId || null,
         paidAt:         new Date().toISOString(),
       });
       await kv.rpush('orders:digest_queue', orderId);
+      if (order.promoCode) {
+        await recordRedemption(order.promoCode, order.email, orderId);
+      }
     } catch (e) {
       console.error('[webhook] Failed to persist order to KV:', e.message);
     }
