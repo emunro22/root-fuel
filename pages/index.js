@@ -30,7 +30,7 @@ const GREEN = '#2d6b27';
 // cover-fit), `fit: 'cover'` is for square/round badge logos that should fill
 // the circle edge-to-edge.
 const STOCKISTS = [
-  { name: 'Spar',                     address: '493 Kilbowie Road, Clydebank, G81 2AX',          logo: '/stockists/spar.png',                        fit: 'contain' },
+  { name: 'Spar Kilbowie Rd',         address: '493 Kilbowie Road, Clydebank, G81 2AX',          logo: '/stockists/spar.png',                        fit: 'contain' },
   { name: 'Top of the Hill Butchers', address: '383 Kilbowie Road, Clydebank, G81 2TU',          logo: '/stockists/top-of-the-hill-butchers.jpg',    fit: 'cover' },
   { name: 'Keystore',                 address: '104-108 Baldwin Avenue, Knightswood, G13 2QU',  logo: '/stockists/keystore.jpg',                    fit: 'cover' },
   { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png',                  fit: 'contain' },
@@ -743,13 +743,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
           <p className={styles.reveal} style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7, transitionDelay: '140ms' }}>
             Can&apos;t wait for delivery day? Grab Root &amp; Fuel from one of these local stockists.
           </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '20px',
-            maxWidth: '980px',
-            margin: '0 auto',
-          }}>
+          <div className={styles.stockistsGrid}>
             {STOCKISTS.map((s, i) => (
               <div key={s.name} className={`${styles.reveal} ${styles.liftCard}`} style={{
                 background: CREAM,

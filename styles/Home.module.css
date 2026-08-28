@@ -521,6 +521,20 @@
   .footerInner { grid-template-columns: 1fr 1fr; gap: 36px; }
   .footerBrand { grid-column: 1 / -1; }
 }
+.stockistsGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+@media (max-width: 768px) {
+  .stockistsGrid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) {
+  .stockistsGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 560px) {
   .footerInner { grid-template-columns: 1fr; gap: 28px; }
   .footerBrand { grid-column: auto; }
