@@ -35,6 +35,7 @@ const STOCKISTS = [
   { name: 'Keystore',                 address: '104-108 Baldwin Avenue, Knightswood, G13 2QU',  logo: '/stockists/keystore.jpg',                    fit: 'cover' },
   { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png',                  fit: 'contain' },
   { name: 'Foundry Gym',              address: '2 Ferry Road, Renfrew, PA4 8RU',                 logo: '/stockists/foundry-gym.jpg',                 fit: 'cover' },
+  { name: 'Spar Renfrew',             address: '194-198 Paisley Road, Renfrew, PA4 8DS',        logo: '/stockists/spar-renfrew.png',                fit: 'contain' },
 ];
 
 function getInitials(name) {
@@ -49,7 +50,7 @@ function getInitials(name) {
 
 /**
  * Ordering schedule (single delivery window):
- *   Tuesday delivery: order Wed(3) → Sat(6) midnight
+ *   Tuesday delivery: order Wed(3) → Fri(5) midnight
  *
  * Only holiday closures lock the window.
  *
@@ -364,7 +365,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
         {/* Delivery banner */}
         <div className={styles.tuesdayBanner} style={{ background: '#0f0f0f' }}>
           <strong>Orders are delivered 8am–12pm on your delivery date.</strong>{' '}
-          Tuesday delivery (order Wed–Sat).
+          Tuesday delivery (order Wed–Fri).
         </div>
 
 
@@ -514,7 +515,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                         Orders Closed
                       </div>
                       <div style={{ fontSize: '14px', color: '#7a3a3a', lineHeight: 1.5 }}>
-                        Tuesday delivery ordering opens Wednesday and runs through Saturday midnight.
+                        Tuesday delivery ordering opens Wednesday and runs through Friday midnight.
                       </div>
                     </div>
                   </div>
@@ -526,7 +527,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                     padding: '16px 20px',
                   }}>
                     <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
-                      Tuesday delivery — order by Saturday midnight
+                      Tuesday delivery — order by Friday midnight
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {[
@@ -951,7 +952,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
               <p className={styles.footerColTitle}>Ordering</p>
               <p className={styles.footerInfo}>
                 <strong>Delivery day</strong><br />
-                Tuesday (order Wed–Sat).
+                Tuesday (order Wed–Fri).
               </p>
             </div>
           </div>

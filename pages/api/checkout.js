@@ -15,20 +15,12 @@ function isOrderingLocked() {
   const ukParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
     weekday: 'short',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
     hour12: false,
   }).formatToParts(now);
-  const day  = ukParts.find(p => p.type === 'weekday')?.value;
-  const hour = parseInt(ukParts.find(p => p.type === 'hour')?.value   || '0', 10);
-  const min  = parseInt(ukParts.find(p => p.type === 'minute')?.value || '0', 10);
-  const sec  = parseInt(ukParts.find(p => p.type === 'second')?.value || '0', 10);
+  const day = ukParts.find(p => p.type === 'weekday')?.value;
 
-  // Tuesday delivery: open Wed → Sat midnight
-  if (day === 'Sun' || day === 'Mon' || day === 'Tue') return true;
-  if (day === 'Sat' && hour === 23 && min === 59 && sec === 59) return true;
-  return false;
+  // Tuesday delivery: open Wed → Fri midnight
+  return day === 'Sun' || day === 'Mon' || day === 'Tue' || day === 'Sat';
 }
 
 export default async function handler(req, res) {
@@ -37,7 +29,7 @@ export default async function handler(req, res) {
   const { items, customer, orderType, table, address, notes, promoCode, promotionCodeId, deliveryFee, collectionSlot, deliveryDay, distanceMiles } = req.body;
 
   if (isOrderingLocked()) {
-    return res.status(403).json({ error: 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Saturday midnight.' });
+    return res.status(403).json({ error: 'Tuesday delivery ordering is closed. Orders for Tuesday are accepted Wednesday through Friday midnight.' });
   }
 
   if (!items?.length || !customer?.email || !customer?.name) {

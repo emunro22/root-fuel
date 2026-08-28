@@ -1,4 +1,4 @@
-// Runs weekly via Vercel Cron (Sunday 9am). Emails the owner a CSV of every
+// Runs weekly via Vercel Cron (Saturday 9am). Emails the owner a CSV of every
 // order confirmed since the last run, a totals summary, and a section
 // listing customer notes/special requests. Replaces the old Google Sheets
 // order ledger — pages/api/webhook.js writes each confirmed order to
