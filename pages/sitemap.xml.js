@@ -4,7 +4,11 @@ import { SITE_URL } from '../lib/site';
 function generateSitemap() {
   const staticUrls = [
     { loc: `${SITE_URL}/`, changefreq: 'weekly', priority: '1.0' },
+    { loc: `${SITE_URL}/about`, changefreq: 'monthly', priority: '0.7' },
+    { loc: `${SITE_URL}/contact`, changefreq: 'monthly', priority: '0.6' },
     { loc: `${SITE_URL}/blog`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_URL}/privacy-policy`, changefreq: 'yearly', priority: '0.2' },
+    { loc: `${SITE_URL}/terms`, changefreq: 'yearly', priority: '0.2' },
   ];
 
   const postUrls = blogPosts.map(p => ({

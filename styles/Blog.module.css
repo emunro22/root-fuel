@@ -127,6 +127,8 @@
   color: #1a2418;
 }
 .articleBody p { font-size: 16px; line-height: 1.8; color: #3d5239; margin-bottom: 18px; }
+.articleBody ul { margin: 0 0 18px 20px; }
+.articleBody li { font-size: 16px; line-height: 1.8; color: #3d5239; margin-bottom: 6px; }
 .articleCta {
   margin-top: 40px;
   padding: 28px;

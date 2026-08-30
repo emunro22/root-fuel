@@ -7,7 +7,7 @@ import MenuItem from '../components/MenuItem';
 import OrderForm from '../components/OrderForm';
 import CateringModal from '../components/CateringModal';
 import InstagramEmbed from '../components/InstagramEmbed';
-import { SITE_URL, SITE_NAME, ADDRESS, INSTAGRAM_URL, GOOGLE_REVIEW_URL, FEATURED_INSTAGRAM_POSTS } from '../lib/site';
+import { SITE_URL, SITE_NAME, ADDRESS, INSTAGRAM_URL, GOOGLE_REVIEW_URL, FEATURED_INSTAGRAM_POSTS, PHONE, PHONE_DISPLAY } from '../lib/site';
 
 const CATEGORIES = [
   { name: 'Starters',       icon: '' },
@@ -36,6 +36,29 @@ const STOCKISTS = [
   { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png',                  fit: 'contain' },
   { name: 'Foundry Gym',              address: '2 Ferry Road, Renfrew, PA4 8RU',                 logo: '/stockists/foundry-gym.jpg',                 fit: 'cover' },
   { name: 'Spar Renfrew',             address: '194-198 Paisley Road, Renfrew, PA4 8DS',        logo: '/stockists/spar-renfrew.png',                fit: 'contain' },
+];
+
+const FAQS = [
+  {
+    question: 'What area do you deliver to?',
+    answer: 'We deliver our performance nutrition meals across Glasgow, with delivery on Tuesdays between 8am and 12pm. Check the menu page for the full postcode list at checkout.',
+  },
+  {
+    question: 'When do I need to order by?',
+    answer: 'Tuesday delivery orders open on Wednesday and close at midnight on Friday. Get your order in before the Friday cutoff to guarantee delivery the following Tuesday.',
+  },
+  {
+    question: "What's in a Root & Fuel meal?",
+    answer: 'Whole, locally sourced ingredients — no ultra-processed fillers. Our menu covers mains, starters, desserts, overnight oats, poke bowls and grab-and-go options, all built around performance nutrition.',
+  },
+  {
+    question: 'Do you cater for events?',
+    answer: 'Yes — we offer bespoke whole-food catering for corporate events, sports teams and private functions in Glasgow. Get in touch through our catering enquiry form with your event details.',
+  },
+  {
+    question: 'Can you cater for dietary requirements?',
+    answer: "Let us know your dietary requirements when you order or enquire — we're happy to talk through options for common allergies and preferences.",
+  },
 ];
 
 function getInitials(name) {
@@ -290,6 +313,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
 
   const scrollToMenu  = () => { document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
   const scrollToAbout = () => { document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
+  const scrollToFaq   = () => { document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
   const switchCategory = (cat) => {
     setActiveCategory(cat);
     setMobileMenuOpen(false);
@@ -309,6 +333,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
         url: SITE_URL,
         image: `${SITE_URL}/logo.png`,
         logo: `${SITE_URL}/logo.png`,
+        telephone: PHONE,
         priceRange: '££',
         servesCuisine: ['Whole Food', 'Meal Prep', 'Healthy'],
         address: {
@@ -340,22 +365,30 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
           name: 'Glasgow',
         },
       },
+      {
+        '@type': 'FAQPage',
+        mainEntity: FAQS.map(f => ({
+          '@type': 'Question',
+          name: f.question,
+          acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        })),
+      },
     ],
   };
 
   return (
     <>
       <Head>
-        <title>Root &amp; Fuel — Order Online</title>
+        <title>Root &amp; Fuel — Performance Nutrition &amp; Health Food, Glasgow</title>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/logo.png" />
-        <meta name="description" content="Performance nutrition, rooted in nature. Order online from Root & Fuel, Glasgow." />
+        <meta name="description" content="Performance nutrition and health food meal prep, delivered fresh in Glasgow. Order online from Root & Fuel — whole-food meals, poke bowls and catering." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content={CREAM} />
         <link rel="canonical" href={SITE_URL} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Root &amp; Fuel — Order Online" />
-        <meta property="og:description" content="Performance nutrition, rooted in nature. Order online from Root & Fuel, Glasgow." />
+        <meta property="og:title" content="Root &amp; Fuel — Performance Nutrition &amp; Health Food, Glasgow" />
+        <meta property="og:description" content="Performance nutrition and health food meal prep, delivered fresh in Glasgow. Order online from Root & Fuel." />
         <meta property="og:url" content={SITE_URL} />
         <meta property="og:image" content={`${SITE_URL}/logo.png`} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -387,6 +420,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 ))}
                 <button className={styles.navLink} onClick={scrollToAbout}>About</button>
                 <button className={styles.navLink} onClick={() => setShowCatering(true)}>Catering</button>
+                <button className={styles.navLink} onClick={scrollToFaq}>FAQ</button>
                 <Link className={styles.navLink} href="/blog">Blog</Link>
                 <a className={styles.navLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">Instagram</a>
               </nav>
@@ -438,6 +472,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
                   Catering Services
                 </button>
+                <button className={styles.mobileAboutLink} onClick={scrollToFaq}>FAQ</button>
                 <Link className={styles.mobileAboutLink} href="/blog" onClick={() => setMobileMenuOpen(false)}>
                   Blog
                 </Link>
@@ -610,12 +645,20 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
               )}
 
               {!locked && (
-                <button className={styles.heroCta} onClick={scrollToMenu}>
-                  View Menu
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 5v14M5 12l7 7 7-7"/>
-                  </svg>
-                </button>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button className={styles.heroCta} onClick={scrollToMenu}>
+                    Order Now
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 5v14M5 12l7 7 7-7"/>
+                    </svg>
+                  </button>
+                  <a className={styles.heroCtaSecondary} href={`tel:${PHONE}`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    Call Now
+                  </a>
+                </div>
               )}
             </div>
             <div className={styles.heroImageWrap}>
@@ -626,7 +669,10 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                       key={src}
                       className={`${styles.heroCarouselSlide} ${i === carouselIndex ? styles.active : ''}`}
                     >
-                      <img src={src} alt={`Root + Fuel dish ${i + 1}`} />
+                      <picture>
+                        <source srcSet={src.replace(/\.jpg$/, '.webp')} type="image/webp" />
+                        <img src={src} alt={`Root + Fuel dish ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} />
+                      </picture>
                     </div>
                   ))}
                   <div className={styles.heroCarouselDots}>
@@ -857,6 +903,30 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
           </a>
         </section>
 
+        {/* FAQ */}
+        <section id="faq" style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', scrollMarginTop: '70px' }}>
+          <div style={{ maxWidth: '760px', margin: '0 auto' }}>
+            <span className={`${styles.aboutLabel} ${styles.reveal}`}>FAQ</span>
+            <h2 className={styles.reveal} style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 'clamp(30px, 4.5vw, 40px)',
+              fontWeight: 400,
+              color: '#1a2418',
+              margin: '6px 0 32px',
+            }}>
+              Frequently asked <span style={{ color: GREEN, fontStyle: 'italic' }}>questions</span>
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {FAQS.map(f => (
+                <div key={f.question} className={styles.reveal} style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '20px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#1a2418', marginBottom: '8px' }}>{f.question}</h3>
+                  <p style={{ fontSize: '14.5px', color: '#5c6e58', lineHeight: 1.7 }}>{f.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Sticky order — hidden when locked */}
         {cartCount > 0 && !mobileMenuOpen && !locked && (
           <div className={styles.stickyOrder}>
@@ -937,10 +1007,12 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
             </div>
             <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '140ms' }}>
               <p className={styles.footerColTitle}>Info</p>
-              <button className={styles.footerLink} onClick={scrollToAbout}>About Us</button>
+              <Link className={styles.footerLink} href="/about">About Us</Link>
               <button className={styles.footerLink} onClick={scrollToMenu}>Order Online</button>
               <button className={styles.footerLink} onClick={() => setShowCatering(true)}>Catering Services</button>
+              <button className={styles.footerLink} onClick={scrollToFaq}>FAQ</button>
               <Link className={styles.footerLink} href="/blog">Blog</Link>
+              <Link className={styles.footerLink} href="/contact">Contact</Link>
             </div>
             <div className={`${styles.footerCol} ${styles.reveal}`} style={{ transitionDelay: '200ms' }}>
               <p className={styles.footerColTitle}>Ordering</p>
@@ -948,10 +1020,18 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 <strong>Delivery day</strong><br />
                 Tuesday (order Wed–Fri).
               </p>
+              <p className={styles.footerInfo}>
+                <strong>Call us</strong><br />
+                <a className={styles.footerLink} href={`tel:${PHONE}`} style={{ display: 'inline' }}>{PHONE_DISPLAY}</a>
+              </p>
             </div>
           </div>
           <div className={styles.footerBottom}>
             <p className={styles.footerCopy}>© {new Date().getFullYear()} Root + Fuel. All rights reserved.</p>
+            <div style={{ display: 'flex', gap: '18px' }}>
+              <Link className={styles.footerLink} href="/privacy-policy" style={{ fontSize: '12.5px' }}>Privacy Policy</Link>
+              <Link className={styles.footerLink} href="/terms" style={{ fontSize: '12.5px' }}>Terms</Link>
+            </div>
             <p className={styles.footerMade}>Whole food · Locally sourced · Glasgow</p>
           </div>
         </footer>
