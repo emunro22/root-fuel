@@ -18,7 +18,7 @@ export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(false);
 
   // ── Active tab ────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState('schedule'); // 'schedule' | 'menu'
+  const [activeTab, setActiveTab] = useState('schedule'); // 'schedule' | 'menu' | 'showcase' | 'promos'
 
   // ── Holidays state ────────────────────────────────────────────────────────
   const [holidays,    setHolidays]    = useState([]);
@@ -46,6 +46,16 @@ export default function AdminPage() {
   const [showAddForm,  setShowAddForm]  = useState(false);
   const [newItem,      setNewItem]      = useState(EMPTY_ITEM);
   const [menuSaving,   setMenuSaving]   = useState('');    // rowNumber | 'add' | ''
+
+  // ── Showcase (past/current items) state ───────────────────────────────────
+  const [showcaseItems,     setShowcaseItems]     = useState([]);
+  const [showcaseLoading,   setShowcaseLoading]   = useState(false);
+  const [showcaseFilter,    setShowcaseFilter]    = useState('All'); // 'All' | 'current' | 'past'
+  const [editingShowcase,   setEditingShowcase]   = useState(null);
+  const [showAddShowcase,   setShowAddShowcase]   = useState(false);
+  const EMPTY_SHOWCASE = { image: '', status: 'current', title: '', description: '' };
+  const [newShowcase,       setNewShowcase]       = useState(EMPTY_SHOWCASE);
+  const [showcaseSaving,    setShowcaseSaving]    = useState('');
 
   // ── Promo codes state ─────────────────────────────────────────────────────
   const [promoCodes,   setPromoCodes]   = useState([]);
@@ -137,6 +147,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (authed && activeTab === 'menu') loadMenu();
+    if (authed && activeTab === 'showcase') loadShowcase();
     if (authed && activeTab === 'promos') loadPromos();
   }, [authed, activeTab]);
 
@@ -319,6 +330,82 @@ export default function AdminPage() {
     finally { setMenuSaving(''); }
   };
 
+  // ── Showcase CRUD ─────────────────────────────────────────────────────────
+  const loadShowcase = async () => {
+    setShowcaseLoading(true);
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    try {
+      const res = await fetch('/api/showcase-admin', { headers: { 'x-admin-password': pw } });
+      const data = await res.json();
+      setShowcaseItems(data.items || []);
+    } catch {
+      showToast('Failed to load showcase items.', true);
+    } finally {
+      setShowcaseLoading(false);
+    }
+  };
+
+  const addShowcaseItemFn = async () => {
+    if (!newShowcase.image) { showToast('Please upload an image first.', true); return; }
+    if (!newShowcase.title.trim()) { showToast('Please describe what this item is.', true); return; }
+    setShowcaseSaving('add');
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    try {
+      const res = await fetch('/api/showcase-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify(newShowcase),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setShowcaseItems(data.items || []);
+        setNewShowcase(EMPTY_SHOWCASE);
+        setShowAddShowcase(false);
+        showToast('Added to the showcase.');
+      } else { showToast('Failed to add item.', true); }
+    } catch { showToast('Network error.', true); }
+    finally { setShowcaseSaving(''); }
+  };
+
+  const saveEditShowcase = async () => {
+    if (!editingShowcase?.title?.trim()) { showToast('Please describe what this item is.', true); return; }
+    setShowcaseSaving(editingShowcase.id);
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    try {
+      const res = await fetch('/api/showcase-admin', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify(editingShowcase),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setShowcaseItems(data.items || []);
+        setEditingShowcase(null);
+        showToast('Item updated.');
+      } else { showToast('Failed to update item.', true); }
+    } catch { showToast('Network error.', true); }
+    finally { setShowcaseSaving(''); }
+  };
+
+  const deleteShowcaseItemFn = async (item) => {
+    if (!confirm(`Remove this item from the showcase? This cannot be undone.`)) return;
+    const pw = sessionStorage.getItem('rf_admin_pw') || password;
+    setShowcaseSaving(item.id);
+    try {
+      const res = await fetch('/api/showcase-admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ id: item.id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setShowcaseItems(data.items || []);
+        showToast('Item removed.');
+      } else { showToast('Failed to remove item.', true); }
+    } catch { showToast('Network error.', true); }
+    finally { setShowcaseSaving(''); }
+  };
+
   // ── Promo code CRUD ──────────────────────────────────────────────────────
   const loadPromos = async () => {
     setPromoLoading(true);
@@ -408,6 +495,8 @@ export default function AdminPage() {
       return (i.days || []).includes(menuDayFilter);
     });
 
+  const filteredShowcase = showcaseItems.filter(i => showcaseFilter === 'All' || i.status === showcaseFilter);
+
   // ── Login screen ──────────────────────────────────────────────────────────
   if (!authed) {
     return (
@@ -485,6 +574,7 @@ export default function AdminPage() {
             {[
               { id:'schedule', label:'Schedule & Closures' },
               { id:'menu',     label:'Menu Items' },
+              { id:'showcase', label:'Past & Current' },
               { id:'promos',   label:'Promo Codes' },
             ].map(tab => (
               <button
@@ -814,6 +904,124 @@ export default function AdminPage() {
                   Unavailable
                 </div>
               </div>
+            </>
+          )}
+
+          {/* ── SHOWCASE TAB (past & current items) ────────────────────── */}
+          {activeTab === 'showcase' && (
+            <>
+              {/* Header row */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
+                <div>
+                  <h2 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'20px', fontWeight:700, marginBottom:'2px' }}>Past & Current Items</h2>
+                  <p style={{ color:'#6b7280', fontSize:'13px' }}>Upload a photo, say what it is, and mark it as a current or past creation — it shows up on the website automatically.</p>
+                </div>
+                <button
+                  onClick={() => { setShowAddShowcase(true); setEditingShowcase(null); }}
+                  style={{ background:RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 18px', fontSize:'13px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                >
+                  + Add Item
+                </button>
+              </div>
+
+              {/* Add item form */}
+              {showAddShowcase && (
+                <div style={{ background:'#fff', border:`2px solid ${RF_GREEN}`, borderRadius:'16px', padding:'24px', marginBottom:'20px' }}>
+                  <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'16px', fontWeight:600, marginBottom:'18px' }}>New Item</h3>
+                  <ShowcaseItemForm
+                    item={newShowcase}
+                    onChange={setNewShowcase}
+                    onSave={addShowcaseItemFn}
+                    adminPw={sessionStorage.getItem('rf_admin_pw') || password}
+                    onCancel={() => { setShowAddShowcase(false); setNewShowcase(EMPTY_SHOWCASE); }}
+                    saving={showcaseSaving === 'add'}
+                    saveLabel="Add to Showcase"
+                  />
+                </div>
+              )}
+
+              {/* Status filter */}
+              <div style={{ display:'flex', gap:'8px', marginBottom:'16px', overflowX:'auto', paddingBottom:'4px' }}>
+                {[
+                  { id:'All',     label:'All' },
+                  { id:'current', label:'Current' },
+                  { id:'past',    label:'Past' },
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setShowcaseFilter(f.id)}
+                    style={{ background:showcaseFilter===f.id?RF_GREEN:'#fff', color:showcaseFilter===f.id?'#fff':'#374151', border:`1px solid ${showcaseFilter===f.id?RF_GREEN:'rgba(0,0,0,0.12)'}`, borderRadius:'100px', padding:'6px 14px', fontSize:'12px', fontWeight:showcaseFilter===f.id?600:400, fontFamily:'inherit', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+                <button onClick={loadShowcase} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#6b7280', borderRadius:'100px', padding:'6px 14px', fontSize:'12px', fontFamily:'inherit', cursor:'pointer', flexShrink:0, marginLeft:'auto' }}>
+                  ↻ Refresh
+                </button>
+              </div>
+
+              {/* Items grid */}
+              {showcaseLoading ? (
+                <div style={{ padding:'40px', textAlign:'center', color:'#9ca3af', background:'#fff', borderRadius:'16px' }}>Loading…</div>
+              ) : filteredShowcase.length === 0 ? (
+                <div style={{ padding:'48px', textAlign:'center', background:'#fff', borderRadius:'16px' }}>
+                  <div style={{ fontSize:'32px', marginBottom:'10px' }}>📸</div>
+                  <p style={{ color:'#6b7280', fontSize:'14px' }}>No items yet. Add one above.</p>
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:'14px' }}>
+                  {filteredShowcase.map(item => (
+                    <div key={item.id}>
+                      {editingShowcase?.id === item.id ? (
+                        <div style={{ background:'#fff', border:`2px solid ${RF_GREEN}`, borderRadius:'16px', padding:'20px', gridColumn:'1 / -1' }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
+                            <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'15px', fontWeight:600 }}>Edit Item</h3>
+                            <button onClick={()=>setEditingShowcase(null)} style={{ background:'transparent', border:'none', color:'#9ca3af', fontSize:'20px', cursor:'pointer', padding:'0 4px', lineHeight:1 }}>×</button>
+                          </div>
+                          <ShowcaseItemForm
+                            item={editingShowcase}
+                            onChange={setEditingShowcase}
+                            onSave={saveEditShowcase}
+                            adminPw={sessionStorage.getItem('rf_admin_pw') || password}
+                            onCancel={() => setEditingShowcase(null)}
+                            saving={showcaseSaving === item.id}
+                            saveLabel="Save Changes"
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ background:'#fff', border:'1px solid rgba(0,0,0,0.08)', borderRadius:'14px', overflow:'hidden', opacity:showcaseSaving===item.id?0.6:1 }}>
+                          <div style={{ position:'relative', aspectRatio:'4/3', background:'#f3f4f6' }}>
+                            {item.image && <img src={item.image} alt={item.title} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />}
+                            <span style={{ position:'absolute', top:'10px', left:'10px', background:item.status==='current'?RF_GREEN:'#6b7280', color:'#fff', fontSize:'11px', fontWeight:600, padding:'3px 10px', borderRadius:'20px', textTransform:'capitalize' }}>
+                              {item.status}
+                            </span>
+                          </div>
+                          <div style={{ padding:'12px 14px' }}>
+                            <p style={{ fontWeight:600, fontSize:'14px', color:'#111', marginBottom:'2px' }}>{item.title}</p>
+                            {item.description && <p style={{ fontSize:'12px', color:'#9ca3af', marginBottom:'10px', overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{item.description}</p>}
+                            <div style={{ display:'flex', gap:'6px' }}>
+                              <button
+                                onClick={()=>setEditingShowcase({...item})}
+                                disabled={!!showcaseSaving}
+                                style={{ flex:1, background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', padding:'6px 10px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:showcaseSaving?'not-allowed':'pointer' }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={()=>deleteShowcaseItemFn(item)}
+                                disabled={!!showcaseSaving}
+                                style={{ flex:1, background:'transparent', border:'1px solid #fecaca', color:'#dc2626', padding:'6px 10px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:showcaseSaving?'not-allowed':'pointer' }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
@@ -1190,6 +1398,182 @@ function MenuItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adm
           })}
         </div>
         <p style={{ fontSize:'11px', color:'#9ca3af', marginTop:'6px' }}>Leave unchecked to show this item every delivery day.</p>
+      </div>
+
+      <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+        <button onClick={onSave} disabled={saving || uploading} style={{ background:(saving||uploading)?'rgba(45,107,39,0.5)':RF_GREEN, color:'#fff', border:'none', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:600, fontFamily:"'DM Sans', sans-serif", cursor:(saving||uploading)?'not-allowed':'pointer' }}>
+          {saving?'Saving…':saveLabel}
+        </button>
+        <button onClick={onCancel} disabled={saving} style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', borderRadius:'10px', padding:'11px 22px', fontSize:'13px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Reusable showcase item form (past/current) ────────────────────────────────
+function ShowcaseItemForm({ item, onChange, onSave, onCancel, saving, saveLabel, adminPw }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const set = (field, val) => onChange(prev => ({ ...prev, [field]: val }));
+
+  const compressImage = (file, maxDim = 1400, quality = 0.85) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl.split(',')[1]);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => { URL.revokeObjectURL(img.src); resolve(null); };
+      img.src = URL.createObjectURL(file);
+    });
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('Image must be under 20 MB.');
+      return;
+    }
+    setUploadError('');
+    setUploading(true);
+    try {
+      const base64 = await compressImage(file);
+      if (!base64) throw new Error('Could not read image');
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+        body: JSON.stringify({ filename: file.name, contentType: 'image/jpeg', data: base64, folder: 'showcase' }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Upload failed');
+      set('image', result.url);
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = async () => {
+    const url = item.image;
+    set('image', '');
+    if (url && url.includes('vercel-storage.com')) {
+      try {
+        await fetch('/api/upload-image', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+          body: JSON.stringify({ url }),
+        });
+      } catch { /* best-effort */ }
+    }
+  };
+
+  return (
+    <div>
+      {/* Image upload */}
+      <div style={{ marginBottom:'16px' }}>
+        <label style={labelStyle}>Photo *</label>
+        {item.image ? (
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' }}>
+            <img
+              src={item.image}
+              alt="Preview"
+              onError={e => e.target.style.display = 'none'}
+              style={{ width:'72px', height:'72px', borderRadius:'10px', objectFit:'cover', border:'1px solid rgba(0,0,0,0.08)', flexShrink:0 }}
+            />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  style={{ background:'transparent', border:'1px solid rgba(0,0,0,0.12)', color:'#374151', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}
+                >
+                  Replace photo
+                </button>
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  disabled={uploading}
+                  style={{ background:'transparent', border:'1px solid #fecaca', color:'#dc2626', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:"'DM Sans', sans-serif", cursor:'pointer' }}
+                >
+                  Remove photo
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            style={{ border:'2px dashed rgba(0,0,0,0.12)', borderRadius:'12px', padding:'24px 16px', textAlign:'center', cursor:uploading?'not-allowed':'pointer', background:'#fafafa', transition:'border-color 0.15s' }}
+          >
+            {uploading ? (
+              <p style={{ color:'#6b7280', fontSize:'13px' }}>Uploading…</p>
+            ) : (
+              <>
+                <p style={{ fontSize:'22px', marginBottom:'6px' }}>📷</p>
+                <p style={{ fontSize:'13px', fontWeight:500, color:'#374151', marginBottom:'3px' }}>Click to upload a photo</p>
+                <p style={{ fontSize:'12px', color:'#9ca3af' }}>JPG, PNG, WebP · auto-compressed</p>
+              </>
+            )}
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          style={{ display:'none' }}
+        />
+        {uploadError && <p style={{ color:'#ef4444', fontSize:'12px', marginTop:'6px' }}>{uploadError}</p>}
+      </div>
+
+      <div style={{ marginBottom:'16px' }}>
+        <label style={labelStyle}>Is this current or past? *</label>
+        <div style={{ display:'flex', gap:'10px' }}>
+          {[
+            { id:'current', label:'Current', hint:'On the menu now' },
+            { id:'past',    label:'Past',    hint:'A previous creation' },
+          ].map(s => {
+            const active = item.status === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => set('status', s.id)}
+                style={{ flex:1, textAlign:'left', background: active ? '#eaf4e8' : '#f9fafb', border:`1px solid ${active ? RF_GREEN : 'rgba(0,0,0,0.1)'}`, borderRadius:'10px', padding:'10px 14px', cursor:'pointer', fontFamily:'inherit' }}
+              >
+                <div style={{ fontSize:'13px', fontWeight:600, color: active ? RF_GREEN : '#374151' }}>{s.label}</div>
+                <div style={{ fontSize:'11px', color:'#9ca3af' }}>{s.hint}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginBottom:'12px' }}>
+        <label style={labelStyle}>What is it? *</label>
+        <input type="text" value={item.title} onChange={e=>set('title', e.target.value)} placeholder="e.g. Mango & Chilli Poke Bowl" style={inputStyle} />
+      </div>
+      <div style={{ marginBottom:'20px' }}>
+        <label style={labelStyle}>Description (optional)</label>
+        <input type="text" value={item.description} onChange={e=>set('description', e.target.value)} placeholder="A line or two about it…" style={inputStyle} />
       </div>
 
       <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>

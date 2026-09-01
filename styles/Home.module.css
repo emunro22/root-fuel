@@ -1,3 +1,22 @@
+/* ─── Local keyframes ─────────────────────────────────── */
+/* CSS Modules scope @keyframes names per-file, so an `animation:` rule in
+   this module can't resolve a keyframe defined only in globals.css (the
+   reference gets hashed to a name nothing matches, and the element just
+   sits frozen at its `from` state). Duplicating the ones this file uses
+   locally keeps them working. */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.1); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── Page wrapper ────────────────────────────────────── */
 .pageWrapper {
   background: var(--bg) !important;
@@ -87,7 +106,7 @@
 .logoSub { display: block; font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
 
 /* Nav */
-.headerRight { display: flex; align-items: center; gap: 6px; }
+.headerRight { display: flex; align-items: center; gap: 6px; position: relative; z-index: 96; }
 .desktopNav { display: flex; gap: 2px; }
 .navLink {
   background: transparent; border: none; padding: 8px 16px; border-radius: 100px;
@@ -103,6 +122,16 @@
   background: var(--green-pale) !important; color: var(--green) !important;
   font-weight: 600;
   box-shadow: inset 0 0 0 1px var(--border-green);
+}
+.navIconLink {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 100px;
+  color: var(--text-mid); margin-left: 2px;
+  transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+.navIconLink:hover {
+  background: var(--green-pale) !important; color: var(--green);
+  transform: translateY(-1px);
 }
 
 /* Cart */
@@ -139,11 +168,13 @@
 /* ─── Mobile Menu ─────────────────────────────────────── */
 .mobileMenuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 90; backdrop-filter: blur(3px); }
 .mobileMenu {
-  position: fixed; top: 92px; left: 0; right: 0; z-index: 95;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 95;
   background: #ffffff !important;
   border-bottom: 1px solid var(--border);
   animation: slideDown 0.25s ease;
   box-shadow: 0 12px 40px var(--shadow);
+  max-height: calc(100vh - 100%);
+  overflow-y: auto;
 }
 .mobileMenuInner { padding: 20px; display: flex; flex-direction: column; gap: 14px; background: #ffffff !important; }
 .mobileCatLabel { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
@@ -172,14 +203,27 @@
   color: white; border: none; padding: 15px; border-radius: 12px;
   font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
-.mobileAboutLink {
-  display: flex; align-items: center; justify-content: center;
-  padding: 12px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--bg-subtle) !important;
-  font-size: 14px; font-weight: 500; color: var(--text-mid); font-family: inherit;
-  cursor: pointer; transition: all 0.18s; width: 100%;
+.mobileLinkList {
+  display: flex; flex-direction: column; gap: 6px;
+  background: var(--bg-subtle) !important; border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px;
 }
-.mobileAboutLink:hover { color: var(--green); background: var(--green-pale) !important; }
+.mobileAboutLink {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 10px; border-radius: 8px;
+  border: none; background: transparent !important;
+  font-size: 14.5px; font-weight: 500; color: var(--text-mid); font-family: inherit;
+  cursor: pointer; transition: all 0.18s; width: 100%; text-align: left;
+}
+.mobileAboutLink:hover, .mobileAboutLink:active { color: var(--green); background: var(--bg-card) !important; }
+.mobileLinkIcon {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: var(--bg-card) !important; color: var(--green);
+}
+.mobileAboutLink:hover .mobileLinkIcon { background: var(--green-pale) !important; }
+.mobileLinkLabel { flex: 1; min-width: 0; }
+.mobileLinkChevron { color: var(--text-muted); flex-shrink: 0; opacity: 0.6; }
 
 /* ─── Hero ────────────────────────────────────────────── */
 .hero {
@@ -541,6 +585,53 @@
 @media (max-width: 480px) {
   .stockistsGrid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ─── Past & Current showcase ─────────────────────────── */
+.showcaseTabs {
+  display: inline-flex; gap: 4px;
+  background: var(--bg-subtle) !important; border: 1px solid var(--border);
+  border-radius: 100px; padding: 4px; margin-bottom: 32px;
+}
+.showcaseTabBtn {
+  background: transparent; border: none; padding: 9px 20px; border-radius: 100px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted); font-family: inherit;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.showcaseTabBtn:hover { color: var(--text-mid); }
+.showcaseTabActive { background: var(--bg-card) !important; color: var(--green) !important; box-shadow: 0 2px 8px var(--shadow); }
+
+.showcaseGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 22px;
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: left;
+}
+.showcaseCard {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  opacity: 0;
+  animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .showcaseCard { opacity: 1; animation: none; }
+}
+.showcaseImageWrap { position: relative; aspect-ratio: 4/3; background: var(--bg-subtle); overflow: hidden; }
+.showcaseImageWrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.showcaseBadge {
+  position: absolute; top: 12px; left: 12px;
+  background: var(--green) !important; color: #fff;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 100px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.showcaseBadgePast { background: #6b7a68 !important; }
+.showcaseCardBody { padding: 16px 18px 20px; }
+.showcaseCardTitle { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.showcaseCardDesc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
 @media (max-width: 560px) {
   .footerInner { grid-template-columns: 1fr; gap: 28px; }

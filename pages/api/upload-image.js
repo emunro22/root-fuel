@@ -22,12 +22,13 @@ export default async function handler(req, res) {
 
   // POST — upload an image
   if (req.method === 'POST') {
-    const { filename, contentType, data } = req.body || {};
+    const { filename, contentType, data, folder } = req.body || {};
     if (!filename || !data) return res.status(400).json({ error: 'filename and data are required' });
 
     try {
       const buffer = Buffer.from(data, 'base64');
-      const safeName = `menu/${Date.now()}-${filename.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const safeFolder = /^[a-zA-Z0-9_-]+$/.test(folder || '') ? folder : 'menu';
+      const safeName = `${safeFolder}/${Date.now()}-${filename.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       const blob = await put(safeName, buffer, {
         access: 'public',
         contentType: contentType || 'image/jpeg',

@@ -172,6 +172,8 @@ export default function Home() {
   const [showCatering,   setShowCatering]   = useState(false);
   const [promos,         setPromos]         = useState([]);
   const [copiedCode,     setCopiedCode]     = useState('');
+  const [showcaseItems,  setShowcaseItems]  = useState([]);
+  const [showcaseTab,    setShowcaseTab]    = useState('current');
 
 const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCountdown();
   const orderingClosed = locked || !tuesdayOpen;
@@ -244,12 +246,19 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
     }, { threshold: 0.15 });
     els.forEach(el => io.observe(el));
     return () => io.disconnect();
-  }, [loading]);
+  }, [loading, showcaseItems.length]);
 
   useEffect(() => {
     fetch('/api/promos')
       .then(r => r.json())
       .then(d => setPromos(d.codes || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/showcase')
+      .then(r => r.json())
+      .then(d => setShowcaseItems(d.items || []))
       .catch(() => {});
   }, []);
 
@@ -310,6 +319,10 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
   });
   const categoryItems = visibleMenu.filter(i => i.category === activeCategory);
   const availableCategories = CATEGORIES.filter(cat => visibleMenu.some(i => i.category === cat.name));
+
+  const currentShowcaseItems = showcaseItems.filter(i => i.status === 'current');
+  const pastShowcaseItems = showcaseItems.filter(i => i.status === 'past');
+  const activeShowcaseItems = showcaseTab === 'current' ? currentShowcaseItems : pastShowcaseItems;
 
   const scrollToMenu  = () => { document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
   const scrollToAbout = () => { document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); };
@@ -422,7 +435,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 <button className={styles.navLink} onClick={() => setShowCatering(true)}>Catering</button>
                 <button className={styles.navLink} onClick={scrollToFaq}>FAQ</button>
                 <Link className={styles.navLink} href="/blog">Blog</Link>
-                <a className={styles.navLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">Instagram</a>
+                <a className={styles.navIconLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Follow Root + Fuel on Instagram">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5.5" />
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                  </svg>
+                </a>
               </nav>
               <button
                 className={`${styles.cartBtn} ${cartBounce ? styles.bounce : ''} ${cartCount > 0 ? styles.cartBtnActive : ''}`}
@@ -446,12 +465,14 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
               </button>
             </div>
           </div>
-        </header>
 
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <>
-            <div className={styles.mobileMenuOverlay} onClick={() => setMobileMenuOpen(false)} />
+          {/* Mobile menu — anchored to the header itself (not a fixed pixel
+              offset) so it always sits flush below it, regardless of how
+              tall the announcement banner above renders (it can wrap to two
+              lines on narrow screens). */}
+          {mobileMenuOpen && (
+            <>
+              <div className={styles.mobileMenuOverlay} onClick={() => setMobileMenuOpen(false)} />
             <div className={styles.mobileMenu} style={{ background: WHITE }}>
               <div className={styles.mobileMenuInner} style={{ background: WHITE }}>
                 <div>
@@ -468,17 +489,43 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                     ))}
                   </div>
                 </div>
-                <button className={styles.mobileAboutLink} onClick={scrollToAbout}>About Root + Fuel</button>
-                <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
-                  Catering Services
-                </button>
-                <button className={styles.mobileAboutLink} onClick={scrollToFaq}>FAQ</button>
-                <Link className={styles.mobileAboutLink} href="/blog" onClick={() => setMobileMenuOpen(false)}>
-                  Blog
-                </Link>
-                <a className={styles.mobileAboutLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
-                  Instagram
-                </a>
+                <div className={styles.mobileLinkList}>
+                  <button className={styles.mobileAboutLink} onClick={scrollToAbout}>
+                    <span className={styles.mobileLinkIcon}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+                    </span>
+                    <span className={styles.mobileLinkLabel}>About Root + Fuel</span>
+                    <svg className={styles.mobileLinkChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                  <button className={styles.mobileAboutLink} onClick={() => { setShowCatering(true); setMobileMenuOpen(false); }}>
+                    <span className={styles.mobileLinkIcon}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11h18M3 11a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2M3 11v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6M8 9V7a4 4 0 0 1 8 0v2" /></svg>
+                    </span>
+                    <span className={styles.mobileLinkLabel}>Catering Services</span>
+                    <svg className={styles.mobileLinkChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                  <button className={styles.mobileAboutLink} onClick={scrollToFaq}>
+                    <span className={styles.mobileLinkIcon}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.67-2.5 2-2.5 4M12 17h.01" /></svg>
+                    </span>
+                    <span className={styles.mobileLinkLabel}>FAQ</span>
+                    <svg className={styles.mobileLinkChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                  <Link className={styles.mobileAboutLink} href="/blog" onClick={() => setMobileMenuOpen(false)}>
+                    <span className={styles.mobileLinkIcon}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z" /></svg>
+                    </span>
+                    <span className={styles.mobileLinkLabel}>Blog</span>
+                    <svg className={styles.mobileLinkChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" /></svg>
+                  </Link>
+                  <a className={styles.mobileAboutLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
+                    <span className={styles.mobileLinkIcon}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5.5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>
+                    </span>
+                    <span className={styles.mobileLinkLabel}>Instagram</span>
+                    <svg className={styles.mobileLinkChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" /></svg>
+                  </a>
+                </div>
                 {cartCount > 0 && (
                   <div className={styles.mobileCartBar} onClick={() => { setShowCart(true); setMobileMenuOpen(false); }}>
                     <div className={styles.mobileCartBarLeft}>
@@ -500,8 +547,9 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 )}
               </div>
             </div>
-          </>
-        )}
+            </>
+          )}
+        </header>
 
         {/* Hero */}
         <section
@@ -772,6 +820,63 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
             )}
           </main>
         </div>
+
+        {/* Past & Current Creations */}
+        {showcaseItems.length > 0 && (
+          <section style={{ background: CREAM, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>
+            <span className={`${styles.aboutLabel} ${styles.reveal}`}>Our Creations</span>
+            <h2 className={styles.reveal} style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 'clamp(30px, 4.5vw, 40px)',
+              fontWeight: 400,
+              color: '#1a2418',
+              margin: '6px 0 14px',
+              transitionDelay: '80ms',
+            }}>
+              Past &amp; <span style={{ color: GREEN, fontStyle: 'italic' }}>current</span> creations
+            </h2>
+            <p className={styles.reveal} style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 32px', lineHeight: 1.7, transitionDelay: '140ms' }}>
+              A look at what we&apos;re making now — and a few favourites from before.
+            </p>
+
+            {currentShowcaseItems.length > 0 && pastShowcaseItems.length > 0 && (
+              <div className={styles.showcaseTabs}>
+                <button
+                  className={`${styles.showcaseTabBtn} ${showcaseTab === 'current' ? styles.showcaseTabActive : ''}`}
+                  onClick={() => setShowcaseTab('current')}
+                >
+                  Current ({currentShowcaseItems.length})
+                </button>
+                <button
+                  className={`${styles.showcaseTabBtn} ${showcaseTab === 'past' ? styles.showcaseTabActive : ''}`}
+                  onClick={() => setShowcaseTab('past')}
+                >
+                  Past ({pastShowcaseItems.length})
+                </button>
+              </div>
+            )}
+
+            <div className={styles.showcaseGrid}>
+              {activeShowcaseItems.map((item, i) => (
+                <div key={item.id} className={`${styles.showcaseCard} ${styles.liftCard}`} style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className={styles.showcaseImageWrap}>
+                    <img src={item.image} alt={item.title} loading="lazy" />
+                    <span className={`${styles.showcaseBadge} ${item.status === 'past' ? styles.showcaseBadgePast : ''}`}>
+                      {item.status === 'current' ? 'Current' : 'Past'}
+                    </span>
+                  </div>
+                  <div className={styles.showcaseCardBody}>
+                    <p className={styles.showcaseCardTitle}>{item.title}</p>
+                    {item.description && <p className={styles.showcaseCardDesc}>{item.description}</p>}
+                  </div>
+                </div>
+              ))}
+              {activeShowcaseItems.length === 0 && (
+                <p className={styles.empty}>Nothing here yet.</p>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Find Us Nearby */}
         <section style={{ background: WHITE, borderTop: '1px solid rgba(0,0,0,0.08)', padding: '72px 28px', textAlign: 'center' }}>

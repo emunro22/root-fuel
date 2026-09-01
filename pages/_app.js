@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next';
 import CookieConsent from '../components/CookieConsent';
+import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }) {
   return (
