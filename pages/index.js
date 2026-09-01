@@ -35,7 +35,7 @@ const STOCKISTS = [
   { name: 'Keystore',                 address: '104-108 Baldwin Avenue, Knightswood, G13 2QU',  logo: '/stockists/keystore.jpg',                    fit: 'cover' },
   { name: 'Nisa Local',               address: '232 Dumbarton Road, Old Kilpatrick, G60 5LJ',   logo: '/stockists/nisa-local.png',                  fit: 'contain' },
   { name: 'Foundry Gym',              address: '2 Ferry Road, Renfrew, PA4 8RU',                 logo: '/stockists/foundry-gym.jpg',                 fit: 'cover' },
-  { name: 'Spar Renfrew',             address: '194-198 Paisley Road, Renfrew, PA4 8DS',        logo: '/stockists/spar-renfrew.png',                fit: 'contain' },
+  { name: 'Spar Renfrew',             address: '194-198 Paisley Road, Renfrew, PA4 8DS',        logo: '/stockists/spar.png',                        fit: 'contain' },
 ];
 
 const FAQS = [
@@ -454,6 +454,13 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
                 {cartCount > 0 && <span className={styles.cartPrice}>£{cartTotal.toFixed(2)}</span>}
               </button>
+              <a className={styles.mobileNavIconLink} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Follow Root + Fuel on Instagram">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5.5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </a>
               <button
                 className={`${styles.hamburger} ${mobileMenuOpen ? styles.hamburgerOpen : ''}`}
                 onClick={() => setMobileMenuOpen(o => !o)}
