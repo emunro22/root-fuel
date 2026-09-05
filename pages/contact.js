@@ -38,8 +38,8 @@ export default function Contact() {
   return (
     <>
       <Head>
-        <title>Contact Us — Root &amp; Fuel, Glasgow</title>
-        <meta name="description" content="Get in touch with Root & Fuel — call, email or send us a message about orders, catering or anything else." />
+        <title>Contact Us: Root &amp; Fuel, Glasgow</title>
+        <meta name="description" content="Get in touch with Root & Fuel: call, email or send us a message about orders, catering or anything else." />
         <link rel="canonical" href={pageUrl} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -70,7 +70,7 @@ export default function Contact() {
           <span className={styles.label}>Get In Touch</span>
           <h1 className={styles.title}>We&apos;d love to hear from you</h1>
           <p className={styles.lead}>
-            Questions about an order, catering, or anything else — call, email, or send us a message below.
+            Questions about an order, catering, or anything else: call, email, or send us a message below.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function Contact() {
               <div className={formStyles.success}>
                 <div className={formStyles.successIcon}>✅</div>
                 <h3>Message sent!</h3>
-                <p>Thanks for getting in touch — we&apos;ll reply as soon as we can.</p>
+                <p>Thanks for getting in touch, we&apos;ll reply as soon as we can.</p>
               </div>
             ) : (
               <form className={formStyles.form} onSubmit={handleSubmit}>
@@ -128,7 +128,7 @@ export default function Contact() {
                 </div>
 
                 {status === 'error' && (
-                  <p className={formStyles.errorMsg}>Something went wrong — please try again or call us.</p>
+                  <p className={formStyles.errorMsg}>Something went wrong. Please try again or call us.</p>
                 )}
 
                 <button type="submit" className={formStyles.submitBtn} disabled={status === 'loading'}>

@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  // Re-check redemption server-side — the /api/validate-promo check happens
+  // Re-check redemption server-side; the /api/validate-promo check happens
   // client-side when the code is applied, but nothing stops a request from
   // reaching this endpoint with a promotionCodeId that was never re-verified.
   if (promoCode && promotionCodeId) {
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
   const total      = itemsTotal + fee;
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  // ── Stash full order in KV — webhook will read this back ─────────────────
+  // ── Stash full order in KV: webhook will read this back ─────────────────
   // 24h TTL = abandoned carts auto-expire, nothing ever hits the Sheet.
   try {
     await kv.set(
@@ -151,7 +151,7 @@ export default async function handler(req, res) {
       line_items: lineItems,
       mode: 'payment',
       customer_email: customer.email,
-      metadata: { orderId }, // tiny — just the ID, well under 500 chars
+      metadata: { orderId }, // tiny, just the ID, well under 500 chars
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url:  `${appUrl}/?cancelled=true`,
     };

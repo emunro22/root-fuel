@@ -502,7 +502,7 @@ export default function AdminPage() {
     return (
       <>
         <Head>
-          <title>Admin — Root + Fuel</title>
+          <title>Admin: Root + Fuel</title>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
         </Head>
@@ -536,7 +536,7 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>Admin — Root + Fuel</title>
+        <title>Admin: Root + Fuel</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
@@ -713,7 +713,7 @@ export default function AdminPage() {
                 <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'14px', fontWeight:600, marginBottom:'12px', color:'#374151' }}>How it works</h3>
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                   {[
-                    ['🛍️','Use "Disable Collection" above to block collection for the week — delivery still works.'],
+                    ['🛍️','Use "Disable Collection" above to block collection for the week; delivery still works.'],
                     ['🔒','During a full closure period, the website locks all ordering automatically.'],
                     ['📅','The existing Mon–Thu weekly lock still applies on top of any closures.'],
                     ['✅','Everything re-enables automatically or the moment you click re-enable.'],
@@ -845,7 +845,7 @@ export default function AdminPage() {
                               <span style={{ fontSize:'13px', fontWeight:600, color:'#374151' }}>£{Number(item.price).toFixed(2)}</span>
                               {!item.available && <span style={{ background:'#fef2f2', color:'#b91c1c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fecaca' }}>Unavailable</span>}
                               {(item.days || []).includes('tuesday') && <span style={{ background:'#eaf4e8', color:'#2d6b27', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid rgba(45,107,39,0.25)' }}>Tuesday</span>}
-                              {(item.days || []).includes('friday') && <span style={{ background:'#fff7ed', color:'#c2410c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fed7aa' }} title="Friday delivery has been removed — this item won't show on the site until re-tagged">⚠️ Friday (legacy)</span>}
+                              {(item.days || []).includes('friday') && <span style={{ background:'#fff7ed', color:'#c2410c', fontSize:'11px', padding:'2px 8px', borderRadius:'10px', border:'1px solid #fed7aa' }} title="Friday delivery has been removed; this item won't show on the site until re-tagged">⚠️ Friday (legacy)</span>}
                             </div>
                             {item.description && (
                               <p style={{ fontSize:'12px', color:'#9ca3af', marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.description}</p>
@@ -865,7 +865,7 @@ export default function AdminPage() {
                               <button
                                 onClick={()=>toggleDay(item, 'friday')}
                                 disabled={!!menuSaving}
-                                title="Friday delivery has been removed — clear this legacy tag"
+                                title="Friday delivery has been removed, clear this legacy tag"
                                 style={{ background:'#c2410c', border:'1px solid #c2410c', color:'#fff', padding:'6px 12px', borderRadius:'8px', fontSize:'12px', fontWeight:500, fontFamily:'inherit', cursor:menuSaving?'not-allowed':'pointer', whiteSpace:'nowrap' }}
                               >
                                 ✕ Remove Friday
@@ -897,7 +897,7 @@ export default function AdminPage() {
               <div style={{ marginTop:'16px', display:'flex', alignItems:'center', gap:'16px', fontSize:'12px', color:'#9ca3af', padding:'0 4px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                   <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#22c55e' }} />
-                  Available — click to toggle
+                  Available, click to toggle
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                   <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#d1d5db' }} />
@@ -914,7 +914,7 @@ export default function AdminPage() {
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
                 <div>
                   <h2 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'20px', fontWeight:700, marginBottom:'2px' }}>Past & Current Items</h2>
-                  <p style={{ color:'#6b7280', fontSize:'13px' }}>Upload a photo, say what it is, and mark it as a current or past creation — it shows up on the website automatically.</p>
+                  <p style={{ color:'#6b7280', fontSize:'13px' }}>Upload a photo, say what it is, and mark it as a current or past creation. It shows up on the website automatically.</p>
                 </div>
                 <button
                   onClick={() => { setShowAddShowcase(true); setEditingShowcase(null); }}
@@ -1177,7 +1177,7 @@ export default function AdminPage() {
                 <h3 style={{ fontFamily:"'Space Grotesk', sans-serif", fontSize:'14px', fontWeight:600, marginBottom:'12px', color:'#374151' }}>How promo codes work</h3>
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                   {[
-                    ['🏷️','Codes are created in Stripe and validated at checkout — discounts apply automatically.'],
+                    ['🏷️','Codes are created in Stripe and validated at checkout. Discounts apply automatically.'],
                     ['🌐','"Show on site" makes the code visible on your homepage so customers can easily find and copy it.'],
                     ['🔒','Deactivating a code prevents it from being used but keeps it in your Stripe history.'],
                     ['📊','Stripe Dashboard has full redemption analytics for every code.'],

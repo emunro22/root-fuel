@@ -22,10 +22,10 @@ export default function BlogIndex() {
   return (
     <>
       <Head>
-        <title>Blog — Nutrition & Gut Health in Glasgow | Root &amp; Fuel</title>
+        <title>Blog: Nutrition & Gut Health in Glasgow | Root &amp; Fuel</title>
         <meta
           name="description"
-          content="Whole-food nutrition, gut health and meal prep tips from Root & Fuel, Glasgow — plus the story behind why we started."
+          content="Whole-food nutrition, gut health and meal prep tips from Root & Fuel, Glasgow, plus the story behind why we started."
         />
         <link rel="canonical" href={pageUrl} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -59,7 +59,7 @@ export default function BlogIndex() {
           <span className={styles.label}>The Journal</span>
           <h1 className={styles.title}>Nutrition, gut health &amp; life in Glasgow</h1>
           <p className={styles.lead}>
-            Notes on whole food, performance nutrition and the story behind Root &amp; Fuel — written by our founder, Samantha.
+            Notes on whole food, performance nutrition and the story behind Root &amp; Fuel, written by our founder, Samantha.
           </p>
         </div>
 

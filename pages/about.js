@@ -17,7 +17,7 @@ export default function About() {
   return (
     <>
       <Head>
-        <title>About Us — Root &amp; Fuel Performance Nutrition, Glasgow</title>
+        <title>About Us: Root &amp; Fuel Performance Nutrition, Glasgow</title>
         <meta
           name="description"
           content="Root & Fuel is a family-run performance nutrition and health food business in Glasgow, founded by Samantha Hamilton. Read our story."
@@ -59,31 +59,31 @@ export default function About() {
           <div className={styles.articleBody}>
             <p>
               Root &amp; Fuel is a small, family-run performance nutrition and health food business based in Glasgow.
-              We make whole-food meal prep and catering that&apos;s built for people who demand more from what they eat —
+              We make whole-food meal prep and catering that&apos;s built for people who demand more from what they eat:
               busy parents, corporate professionals, and anyone fuelling an active lifestyle.
             </p>
 
             <h2>Founded by Samantha Hamilton</h2>
             <p>
-              I&apos;m Samantha, a mum of two with a lifelong love of cooking — but it wasn&apos;t until 2020 that food became
+              I&apos;m Samantha, a mum of two with a lifelong love of cooking, but it wasn&apos;t until 2020 that food became
               something much deeper than just flavour. After being diagnosed with ADHD and struggling with ongoing gut
               issues including IBS, endometriosis, chronic bloating and persistent stomach pain, I was forced to take a
               hard look at what I was putting into my body.
             </p>
             <p>
-              What I found was simple, but powerful: the more I relied on overly processed foods, the worse I felt —
+              What I found was simple, but powerful: the more I relied on overly processed foods, the worse I felt,
               physically, mentally and hormonally. So I started to change things. When I had my first baby in 2021, I began
               focusing on whole, nourishing foods for my family, tracking how different ingredients made me feel, and
               slowly building a way of eating that supported not just my body, but my brain too.
             </p>
             <p>
-              In 2025 I stepped away from the corporate world to build something of my own — something that genuinely
+              In 2025 I stepped away from the corporate world to build something of my own, something that genuinely
               mattered. Root &amp; Fuel is the result of that journey.
             </p>
 
             <h2>What we do</h2>
             <p>
-              We cook whole-food meal prep — mains, starters, desserts, overnight oats, poke bowls and grab-and-go options —
+              We cook whole-food meal prep (mains, starters, desserts, overnight oats, poke bowls and grab-and-go options)
               delivered fresh across Glasgow every Tuesday. We also provide bespoke whole-food catering for corporate
               events, sports teams and private functions.
             </p>
@@ -91,7 +91,7 @@ export default function About() {
             <h2>Our mission</h2>
             <p>
               To make real, fresh, nourishing food more accessible for busy people, without compromising on quality,
-              flavour or nutrition. Nothing we do is overly complicated or pretentious — it&apos;s simply good food, made
+              flavour or nutrition. Nothing we do is overly complicated or pretentious. It&apos;s simply good food, made
               with intention and purpose.
             </p>
 

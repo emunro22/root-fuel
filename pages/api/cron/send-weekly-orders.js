@@ -1,7 +1,7 @@
 // Runs weekly via Vercel Cron (Saturday 9am). Emails the owner a CSV of every
 // order confirmed since the last run, a totals summary, and a section
 // listing customer notes/special requests. Replaces the old Google Sheets
-// order ledger — pages/api/webhook.js writes each confirmed order to
+// order ledger; pages/api/webhook.js writes each confirmed order to
 // `order:<id>` in KV and queues its id in `orders:digest_queue`; this route
 // drains that queue and resets it once the email has sent successfully.
 import { kv } from '@vercel/kv';
@@ -75,7 +75,7 @@ function buildDigestEmail(orders) {
     : '<p style="margin:8px 0; font-size:14px; color:#888;">No items this week.</p>';
 
   return {
-    subject: `Weekly Orders Report — ${totalOrders} order${totalOrders === 1 ? '' : 's'}, £${totalRevenue.toFixed(2)}`,
+    subject: `Weekly Orders Report: ${totalOrders} order${totalOrders === 1 ? '' : 's'}, £${totalRevenue.toFixed(2)}`,
     html: `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color:#f5f1ea; padding:40px 10px;">
         <div style="max-width:560px; margin:auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">

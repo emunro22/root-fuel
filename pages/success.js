@@ -8,7 +8,7 @@ export default function SuccessPage() {
   const { order_id, session_id } = router.query;
   const [confirmed, setConfirmed] = useState(false);
 
-  // Order completed — clear the saved in-progress form so it doesn't resurface next time
+  // Order completed; clear the saved in-progress form so it doesn't resurface next time
   useEffect(() => {
     try { localStorage.removeItem('rf_order_form'); } catch {}
   }, []);
@@ -27,7 +27,7 @@ export default function SuccessPage() {
   return (
     <>
       <Head>
-        <title>Order Confirmed — Root & Fuel</title>
+        <title>Order Confirmed: Root & Fuel</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />

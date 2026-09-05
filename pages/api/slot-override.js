@@ -8,7 +8,7 @@ function getPassword(req) {
 }
 
 export default async function handler(req, res) {
-  // GET — return current override (no auth needed, checkout uses this)
+  // GET: return current override (no auth needed, checkout uses this)
   if (req.method === 'GET') {
     const override = await kv.get('collection_override') || null;
     return res.status(200).json({ override });
@@ -20,13 +20,13 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorised' });
   }
 
-  // PUT — set or clear an override
-  // Body: { disabled: true, label: "Early closure — Tue 20 May" } or { disabled: false }
+  // PUT: set or clear an override
+  // Body: { disabled: true, label: "Early closure, Tue 20 May" } or { disabled: false }
   if (req.method === 'PUT') {
     const { disabled, label } = req.body || {};
 
     if (!disabled) {
-      // Clear the override — collection is back to normal
+      // Clear the override; collection is back to normal
       await kv.del('collection_override');
       return res.status(200).json({ override: null });
     }

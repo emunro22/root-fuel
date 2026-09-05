@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
   return (
     <>
       <Head>
-        <title>Privacy Policy — Root &amp; Fuel</title>
+        <title>Privacy Policy: Root &amp; Fuel</title>
         <meta name="description" content="How Root & Fuel Ltd collects, uses and protects your personal data when you order, enquire about catering, or browse our website." />
         <link rel="canonical" href={pageUrl} />
         <meta name="robots" content="noindex, follow" />
@@ -51,8 +51,8 @@ export default function PrivacyPolicy() {
             <p>When you order, enquire about catering, or contact us, we may collect:</p>
             <ul>
               <li>Name, email address, phone number and delivery/postal address</li>
-              <li>Order details — items, delivery date, promo codes used</li>
-              <li>Catering enquiry details — event date, guest count, dietary requirements</li>
+              <li>Order details: items, delivery date, promo codes used</li>
+              <li>Catering enquiry details: event date, guest count, dietary requirements</li>
               <li>Payment information, processed directly by our payment provider, Stripe (we do not store card details ourselves)</li>
               <li>Messages you send us through our contact or enquiry forms</li>
             </ul>
@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
             <ul>
               <li>To fulfil and deliver your order</li>
               <li>To respond to catering enquiries and contact-form messages</li>
-              <li>To send order confirmations, delivery updates and — where you&apos;ve ordered from us — an occasional review request</li>
+              <li>To send order confirmations, delivery updates and, where you&apos;ve ordered from us, an occasional review request</li>
               <li>To prevent abuse of promotional discount codes</li>
               <li>To meet our legal and accounting obligations</li>
             </ul>
@@ -69,17 +69,17 @@ export default function PrivacyPolicy() {
             <h2>Who we share it with</h2>
             <p>We use the following third-party processors to run our service. Each only receives the data it needs to do its job:</p>
             <ul>
-              <li><strong>Stripe</strong> — payment processing</li>
-              <li><strong>Resend</strong> — transactional email delivery (order confirmations, enquiry notifications)</li>
-              <li><strong>Vercel</strong> — website hosting, order storage and privacy-friendly, cookieless analytics</li>
-              <li><strong>OpenStreetMap (Nominatim)</strong> — checking delivery addresses fall within our delivery area</li>
-              <li><strong>Google Sheets</strong> — internal logging of catering enquiries</li>
+              <li><strong>Stripe</strong>: payment processing</li>
+              <li><strong>Resend</strong>: transactional email delivery (order confirmations, enquiry notifications)</li>
+              <li><strong>Vercel</strong>: website hosting, order storage and privacy-friendly, cookieless analytics</li>
+              <li><strong>OpenStreetMap (Nominatim)</strong>: checking delivery addresses fall within our delivery area</li>
+              <li><strong>Google Sheets</strong>: internal logging of catering enquiries</li>
             </ul>
             <p>We do not sell your personal data.</p>
 
             <h2>Cookies</h2>
             <p>
-              Our website analytics (Vercel Web Analytics) is cookieless — it does not set tracking cookies or use
+              Our website analytics (Vercel Web Analytics) is cookieless: it does not set tracking cookies or use
               persistent identifiers. Where we ever introduce cookies that aren&apos;t strictly necessary for the site to
               function, we will ask for your consent first via the cookie banner.
             </p>

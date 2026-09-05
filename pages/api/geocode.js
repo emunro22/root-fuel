@@ -79,7 +79,7 @@ async function geocodeWithFallbacks(address) {
   // 4. Original full address free-text
   strategies.push({ q: address });
 
-  // 5. Postcode only — least precise but nearly always works,
+  // 5. Postcode only, least precise but nearly always works,
   //    good enough for a 15-mile radius check
   if (postcode) {
     strategies.push({ q: postcode });

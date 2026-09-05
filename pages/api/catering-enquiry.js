@@ -20,9 +20,9 @@ function buildOwnerEmail({ name, email, phone, eventDate, guestCount, message })
             </div>
             <p style="margin:5px 0; font-size:14px;"><strong>Name:</strong> ${name}</p>
             <p style="margin:5px 0; font-size:14px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#316431; text-decoration:none;">${email}</a></p>
-            <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone || '—'}</p>
-            <p style="margin:5px 0; font-size:14px;"><strong>Event date:</strong> ${eventDate || '—'}</p>
-            <p style="margin:5px 0; font-size:14px;"><strong>Guest count:</strong> ${guestCount || '—'}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone || 'N/A'}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Event date:</strong> ${eventDate || 'N/A'}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Guest count:</strong> ${guestCount || 'N/A'}</p>
             <p style="margin:15px 0 0; font-size:14px; color:#333; background:#f9f9f9; padding:12px; border-radius:8px; line-height:1.5;">${message}</p>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     await resend.emails.send({ from: FROM_ENQUIRY, to: OWNER_EMAIL, ...owner });
   } catch (e) {
     console.error('[catering-enquiry] Owner email error:', e.message);
-    // Don't fail the request — the enquiry is already saved in Sheets
+    // Don't fail the request; the enquiry is already saved in Sheets
   }
 
   return res.status(200).json({ ok: true });

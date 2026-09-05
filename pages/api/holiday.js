@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     return pw === ADMIN_PASSWORD;
   };
 
-  // POST — auth
+  // POST: auth
   if (req.method === 'POST') {
     const { action, password } = req.body || {};
 
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Unknown action' });
   }
 
-  // GET — fetch holidays
+  // GET: fetch holidays
   if (req.method === 'GET') {
     if (!isAuthed()) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ holidays, status });
   }
 
-  // PUT — save holidays
+  // PUT: save holidays
   if (req.method === 'PUT') {
     if (!isAuthed()) return res.status(401).json({ error: 'Unauthorized' });
 

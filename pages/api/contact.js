@@ -19,7 +19,7 @@ function buildOwnerEmail({ name, email, phone, message }) {
             </div>
             <p style="margin:5px 0; font-size:14px;"><strong>Name:</strong> ${name}</p>
             <p style="margin:5px 0; font-size:14px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#316431; text-decoration:none;">${email}</a></p>
-            <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone || '—'}</p>
+            <p style="margin:5px 0; font-size:14px;"><strong>Phone:</strong> ${phone || 'N/A'}</p>
             <p style="margin:15px 0 0; font-size:14px; color:#333; background:#f9f9f9; padding:12px; border-radius:8px; line-height:1.5;">${message}</p>
           </div>
         </div>

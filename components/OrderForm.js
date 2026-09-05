@@ -64,7 +64,7 @@ function isAddressSufficientlyDetailed(address) {
 // Persist in-progress order details so they survive a trip to Stripe and back
 // (e.g. the customer clicks "back" or cancels payment).
 const STORAGE_KEY = 'rf_order_form';
-const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24h — matches the pending-order/session expiry
+const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24h, matches the pending-order/session expiry
 
 function loadSavedFormState() {
   if (typeof window === 'undefined') return null;
@@ -174,7 +174,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
         setAddressValid(true);
       } else {
         setAddressValid(false);
-        setAddressError(`Sorry, your address is ${miles.toFixed(1)} miles away — delivery is only available within ${MAX_MILES} miles of Glasgow G13.`);
+        setAddressError(`Sorry, your address is ${miles.toFixed(1)} miles away. Delivery is only available within ${MAX_MILES} miles of Glasgow G13.`);
       }
     } catch {
       setAddressError('Could not verify address. Please check it and try again.');
@@ -365,7 +365,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
                 <div className={styles.section}>
                   <span className={styles.sectionLabel}>Collection Time Slot *</span>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#7a8f77', lineHeight: 1.5 }}>
-                    Food is made to order — please do not arrive before your chosen slot.
+                    Food is made to order, please do not arrive before your chosen slot.
                   </p>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     {collectionSlots.map(slot => (
@@ -469,12 +469,12 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
                       )}
                       {addressValid === true && addressDistance !== null && deliveryFee !== null && (
                         <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#2d6b27', lineHeight: 1.4 }}>
-                          ✓ Address confirmed — {addressDistance.toFixed(1)} miles away. Delivery fee: <strong>£{deliveryFee.toFixed(2)}</strong>
+                          ✓ Address confirmed: {addressDistance.toFixed(1)} miles away. Delivery fee: <strong>£{deliveryFee.toFixed(2)}</strong>
                         </p>
                       )}
                       {requiresMinimumOrder && !minimumOrderMet && (
                         <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#b41e1e', lineHeight: 1.4 }}>
-                          Orders delivered beyond {MIN_MILES_FOR_MINIMUM_ORDER} miles need a £{MINIMUM_ORDER_BEYOND_5_MILES.toFixed(2)} minimum order. Your subtotal is £{cartSubtotal.toFixed(2)} — add £{(MINIMUM_ORDER_BEYOND_5_MILES - cartSubtotal).toFixed(2)} more to qualify.
+                          Orders delivered beyond {MIN_MILES_FOR_MINIMUM_ORDER} miles need a £{MINIMUM_ORDER_BEYOND_5_MILES.toFixed(2)} minimum order. Your subtotal is £{cartSubtotal.toFixed(2)}, add £{(MINIMUM_ORDER_BEYOND_5_MILES - cartSubtotal).toFixed(2)} more to qualify.
                         </p>
                       )}
                     </div>
@@ -511,7 +511,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
                     </div>
                   )}
 
-                  {/* Delivery fee line — only shown once address is checked */}
+                  {/* Delivery fee line: only shown once address is checked */}
                   {orderType === 'delivery' && deliveryFee !== null && (
                     <div className={styles.summaryRow} style={{ color: '#7a8f77' }}>
                       <span>Delivery fee</span>
@@ -591,7 +591,7 @@ export default function OrderForm({ cart, onClose, tuesdayOpen, onRemoveStaleIte
                 )}
                 {promoResult && (
                   <p className={styles.promoSuccess}>
-                    ✓ Code applied —{' '}
+                    ✓ Code applied:{' '}
                     {promoResult.discount.type === 'percent'
                       ? `${promoResult.discount.amount}% off`
                       : `£${promoResult.discount.amount.toFixed(2)} off`}

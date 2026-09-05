@@ -48,7 +48,7 @@ export default function CateringModal({ onClose }) {
           <div className={styles.success}>
             <div className={styles.successIcon}>✅</div>
             <h3>Enquiry sent!</h3>
-            <p>Thanks — we'll be in touch shortly to discuss your event.</p>
+            <p>Thanks, we'll be in touch shortly to discuss your event.</p>
             <button className={styles.doneBtn} onClick={onClose}>Done</button>
           </div>
         ) : (
@@ -111,7 +111,7 @@ export default function CateringModal({ onClose }) {
             </div>
 
             {status === 'error' && (
-              <p className={styles.errorMsg}>Something went wrong — please try again.</p>
+              <p className={styles.errorMsg}>Something went wrong. Please try again.</p>
             )}
 
             <button

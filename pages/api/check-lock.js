@@ -3,7 +3,7 @@ import { kv } from '@vercel/kv';
 function getLockStatus(holidays) {
   const now = new Date();
 
-  // 1. Holiday closures — override everything
+  // 1. Holiday closures: override everything
   for (const h of holidays) {
     const from = new Date(h.from + 'T00:00:00');
     const to   = new Date(h.to   + 'T23:59:59');

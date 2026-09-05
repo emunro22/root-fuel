@@ -113,7 +113,7 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
   `).join('');
 
   return {
-    subject: `🛍️ New order ${orderId} — £${total.toFixed(2)} (${orderType})`,
+    subject: `🛍️ New order ${orderId}: £${total.toFixed(2)} (${orderType})`,
     html: `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color:#f5f1ea; padding:40px 10px;">
         <div style="max-width:500px; margin:auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -124,7 +124,7 @@ function buildOwnerEmail({ orderId, name, email, phone, items, total, orderType,
             <div style="background:#eef5ee; border-radius:12px; padding:20px; text-align:center; margin-bottom:25px;">
               <h2 style="margin:0; color:#316431; font-size:20px;">🛍️ New Order Received</h2>
               <p style="margin:10px 0 5px; color:#111; font-size:18px; font-weight:bold;">${orderId}</p>
-              <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()} — ${deliveryDay || 'Tuesday'}${orderType === 'pickup' ? ` at ${collectionSlot || '13:00'}` : ''}</p>
+              <p style="margin:0; color:#444;">£${total.toFixed(2)} • ${orderType.toUpperCase()} • ${deliveryDay || 'Tuesday'}${orderType === 'pickup' ? ` at ${collectionSlot || '13:00'}` : ''}</p>
             </div>
             <h4 style="margin:0 0 10px; color:#316431; border-bottom:2px solid #f5f1ea; padding-bottom:5px;">Customer Details</h4>
             <p style="margin:5px 0; font-size:14px;"><strong>Name:</strong> ${name}</p>
@@ -276,7 +276,7 @@ export default async function handler(req, res) {
     if (orderType === 'delivery') {
       try {
         const deliveryDate = nextDeliveryDate();
-        const followupTtl = 60 * 60 * 24 * 21; // 21 days — safety net if cron is ever missed
+        const followupTtl = 60 * 60 * 24 * 21; // 21 days, safety net if cron is ever missed
         await kv.set(`review_order:${orderId}`, { name: order.name, email: order.email }, { ex: followupTtl });
         await kv.lpush(`review_followups:${deliveryDate}`, orderId);
         await kv.expire(`review_followups:${deliveryDate}`, followupTtl);

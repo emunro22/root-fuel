@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Stripe from 'stripe';
 import styles from '../styles/Home.module.css';
 import Cart from '../components/Cart';
 import MenuItem from '../components/MenuItem';
@@ -8,6 +9,45 @@ import OrderForm from '../components/OrderForm';
 import CateringModal from '../components/CateringModal';
 import InstagramEmbed from '../components/InstagramEmbed';
 import { SITE_URL, SITE_NAME, ADDRESS, INSTAGRAM_URL, GOOGLE_REVIEW_URL, FEATURED_INSTAGRAM_POSTS, PHONE, PHONE_DISPLAY } from '../lib/site';
+import { getMenuItems } from '../lib/sheets';
+import { getShowcaseItems } from '../lib/showcase';
+
+// Menu, active promo codes and the showcase gallery are the page's real
+// content, so they're fetched here (server-side, at build/revalidate time)
+// rather than via useEffect+fetch on the client. That way they're present in
+// the initial server-rendered HTML instead of popping in after hydration.
+// Admin-edited data (Sheets/KV/Stripe) doesn't need per-request freshness, so
+// ISR with a short revalidate window keeps pages fast while staying current.
+export async function getStaticProps() {
+  const [menuResult, showcaseResult, promosResult] = await Promise.allSettled([
+    getMenuItems(),
+    getShowcaseItems(),
+    (async () => {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const codes = await stripe.promotionCodes.list({ active: true, limit: 100, expand: ['data.coupon'] });
+      return codes.data
+        .filter(c => c.metadata?.public === 'true')
+        .map(c => ({
+          code: c.code,
+          discount: c.coupon.percent_off
+            ? { type: 'percent', amount: c.coupon.percent_off }
+            : { type: 'fixed', amount: c.coupon.amount_off / 100 },
+          expiresAt: c.expires_at || null,
+          timesRedeemed: c.times_redeemed,
+          maxRedemptions: c.max_redemptions || null,
+        }));
+    })(),
+  ]);
+
+  return {
+    props: {
+      initialMenu: menuResult.status === 'fulfilled' && Array.isArray(menuResult.value) ? menuResult.value : [],
+      initialShowcase: showcaseResult.status === 'fulfilled' && Array.isArray(showcaseResult.value) ? showcaseResult.value : [],
+      initialPromos: promosResult.status === 'fulfilled' ? promosResult.value : [],
+    },
+    revalidate: 60,
+  };
+}
 
 const CATEGORIES = [
   { name: 'Starters',       icon: '' },
@@ -23,7 +63,7 @@ const CREAM = '#f5f1ea';
 const WHITE = '#ffffff';
 const GREEN = '#2d6b27';
 
-// Local shops and gyms that stock Root + Fuel — drop matching logo files into
+// Local shops and gyms that stock Root + Fuel; drop matching logo files into
 // /public/stockists/ (see the `logo` path below); until a file exists, the
 // initials badge is shown instead so nothing ever renders as a broken image.
 // `fit: 'contain'` is for wide wordmark logos (would get cropped by a circular
@@ -49,15 +89,15 @@ const FAQS = [
   },
   {
     question: "What's in a Root & Fuel meal?",
-    answer: 'Whole, locally sourced ingredients — no ultra-processed fillers. Our menu covers mains, starters, desserts, overnight oats, poke bowls and grab-and-go options, all built around performance nutrition.',
+    answer: 'Whole, locally sourced ingredients: no ultra-processed fillers. Our menu covers mains, starters, desserts, overnight oats, poke bowls and grab-and-go options, all built around performance nutrition.',
   },
   {
     question: 'Do you cater for events?',
-    answer: 'Yes — we offer bespoke whole-food catering for corporate events, sports teams and private functions in Glasgow. Get in touch through our catering enquiry form with your event details.',
+    answer: 'Yes, we offer bespoke whole-food catering for corporate events, sports teams and private functions in Glasgow. Get in touch through our catering enquiry form with your event details.',
   },
   {
     question: 'Can you cater for dietary requirements?',
-    answer: "Let us know your dietary requirements when you order or enquire — we're happy to talk through options for common allergies and preferences.",
+    answer: "Let us know your dietary requirements when you order or enquire. We're happy to talk through options for common allergies and preferences.",
   },
 ];
 
@@ -151,8 +191,8 @@ function useCountdown() {
   return { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft };
 }
 
-export default function Home() {
-  const [menu,           setMenu]           = useState([]);
+export default function Home({ initialMenu, initialShowcase, initialPromos }) {
+  const [menu,           setMenu]           = useState(initialMenu || []);
   const [cart,           setCart]           = useState(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -163,16 +203,16 @@ export default function Home() {
       return Array.isArray(items) ? items : [];
     } catch { return []; }
   });
-  const [loading,        setLoading]        = useState(true);
+  const [loading,        setLoading]        = useState(false);
   const [activeCategory, setActiveCategory] = useState('Mains');
   const [showCart,       setShowCart]       = useState(false);
   const [showForm,       setShowForm]       = useState(false);
   const [cartBounce,     setCartBounce]     = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCatering,   setShowCatering]   = useState(false);
-  const [promos,         setPromos]         = useState([]);
+  const [promos,         setPromos]         = useState(initialPromos || []);
   const [copiedCode,     setCopiedCode]     = useState('');
-  const [showcaseItems,  setShowcaseItems]  = useState([]);
+  const [showcaseItems,  setShowcaseItems]  = useState(initialShowcase || []);
   const [showcaseTab,    setShowcaseTab]    = useState('current');
 
 const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCountdown();
@@ -223,13 +263,6 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
     }
   }, []);
 
-  useEffect(() => {
-    fetch('/api/menu')
-      .then(r => r.json())
-      .then(data => { setMenu(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
-
   // Fade + rise sections into view as the user scrolls to them
   useEffect(() => {
     const revealClasses = [styles.reveal, styles.revealLeft, styles.revealRight].filter(Boolean);
@@ -247,20 +280,6 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
     els.forEach(el => io.observe(el));
     return () => io.disconnect();
   }, [loading, showcaseItems.length]);
-
-  useEffect(() => {
-    fetch('/api/promos')
-      .then(r => r.json())
-      .then(d => setPromos(d.codes || []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/showcase')
-      .then(r => r.json())
-      .then(d => setShowcaseItems(d.items || []))
-      .catch(() => {});
-  }, []);
 
   const copyPromoCode = (code) => {
     navigator.clipboard?.writeText(code).then(() => {
@@ -300,7 +319,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
   }, []);
 
   // Checkout rejected these because they've fallen off the live menu since
-  // they were added to a (possibly days-old) cart — drop them so the
+  // they were added to a (possibly days-old) cart; drop them so the
   // customer's next attempt only contains items that still exist.
   const removeStaleItems = useCallback((names) => {
     setCart(prev => prev.filter(c => !names.includes(c.name)));
@@ -392,15 +411,15 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
   return (
     <>
       <Head>
-        <title>Root &amp; Fuel — Performance Nutrition &amp; Health Food, Glasgow</title>
+        <title>Root &amp; Fuel: Performance Nutrition &amp; Health Food, Glasgow</title>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/logo.png" />
-        <meta name="description" content="Performance nutrition and health food meal prep, delivered fresh in Glasgow. Order online from Root & Fuel — whole-food meals, poke bowls and catering." />
+        <meta name="description" content="Performance nutrition and health food meal prep, delivered fresh in Glasgow. Order online from Root & Fuel: whole-food meals, poke bowls and catering." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content={CREAM} />
         <link rel="canonical" href={SITE_URL} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Root &amp; Fuel — Performance Nutrition &amp; Health Food, Glasgow" />
+        <meta property="og:title" content="Root &amp; Fuel: Performance Nutrition &amp; Health Food, Glasgow" />
         <meta property="og:description" content="Performance nutrition and health food meal prep, delivered fresh in Glasgow. Order online from Root & Fuel." />
         <meta property="og:url" content={SITE_URL} />
         <meta property="og:image" content={`${SITE_URL}/logo.png`} />
@@ -473,7 +492,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
             </div>
           </div>
 
-          {/* Mobile menu — anchored to the header itself (not a fixed pixel
+          {/* Mobile menu: anchored to the header itself (not a fixed pixel
               offset) so it always sits flush below it, regardless of how
               tall the announcement banner above renders (it can wrap to two
               lines on narrow screens). */}
@@ -617,7 +636,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                     padding: '16px 20px',
                   }}>
                     <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: GREEN, marginBottom: '10px' }}>
-                      Tuesday delivery — order by Friday midnight
+                      Tuesday delivery, order by Friday midnight
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {[
@@ -646,7 +665,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 ) : null}
               </div>
 
-              {/* Promo codes box — same style as countdown, only shown when codes are active */}
+              {/* Promo codes box: same style as countdown, only shown when codes are active */}
               {promos.length > 0 && (
                 <div style={{
                   margin: '0 0 24px',
@@ -761,19 +780,19 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
                 I didn&apos;t start Root &amp; Fuel<br />because it was <em>easy</em>
               </h2>
               <p className={styles.aboutLead}>
-                I&apos;m Samantha, a 35-year-old mum of two, with a lifelong love of cooking — but it wasn&apos;t until 2020 that food became something much deeper than just flavour. After being diagnosed with ADHD and struggling with ongoing gut issues including IBS, endometriosis, chronic bloating, and persistent stomach pain, I was forced to take a hard look at what I was putting into my body.
+                I&apos;m Samantha, a 35-year-old mum of two, with a lifelong love of cooking, but it wasn&apos;t until 2020 that food became something much deeper than just flavour. After being diagnosed with ADHD and struggling with ongoing gut issues including IBS, endometriosis, chronic bloating, and persistent stomach pain, I was forced to take a hard look at what I was putting into my body.
               </p>
               <p className={styles.aboutText}>
-                What I found was simple, but powerful: the more I relied on overly processed foods, the worse I felt — physically, mentally, and hormonally. So, I started to change things.
+                What I found was simple, but powerful: the more I relied on overly processed foods, the worse I felt, physically, mentally, and hormonally. So, I started to change things.
               </p>
               <p className={styles.aboutText}>
-                When I had my first baby in 2021, I began focusing on whole, nourishing foods for my family. I kept a food diary, tracked how different ingredients made me feel, and slowly built a way of eating that supported not just my body, but my brain too. The difference was undeniable — more energy, better focus, less discomfort, and a completely different relationship with food.
+                When I had my first baby in 2021, I began focusing on whole, nourishing foods for my family. I kept a food diary, tracked how different ingredients made me feel, and slowly built a way of eating that supported not just my body, but my brain too. The difference was undeniable: more energy, better focus, less discomfort, and a completely different relationship with food.
               </p>
               <p className={styles.aboutText}>
-                Fast forward to 2025, I was given the opportunity to step away from the corporate world and build something of my own — something that genuinely mattered. Root &amp; Fuel is the result of that journey.
+                Fast forward to 2025, I was given the opportunity to step away from the corporate world and build something of my own, something that genuinely mattered. Root &amp; Fuel is the result of that journey.
               </p>
               <p className={styles.aboutText}>
-                We are a small, family run business with a clear mission: to make real, fresh, nourishing food more accessible for busy people — without compromising on quality, flavour, or nutrition. Whether you&apos;re a busy parent, a corporate professional, or someone trying to fuel an active lifestyle, we bridge the gap between convenience and quality.
+                We are a small, family run business with a clear mission: to make real, fresh, nourishing food more accessible for busy people, without compromising on quality, flavour, or nutrition. Whether you&apos;re a busy parent, a corporate professional, or someone trying to fuel an active lifestyle, we bridge the gap between convenience and quality.
               </p>
               <p className={styles.aboutText}>
                 Nothing we do is overly complicated or pretentious. It&apos;s simply good food, made with intention and purpose. Because when you eat better, you feel better. And when you feel better, everything else starts to follow.
@@ -843,7 +862,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
               Past &amp; <span style={{ color: GREEN, fontStyle: 'italic' }}>current</span> creations
             </h2>
             <p className={styles.reveal} style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 32px', lineHeight: 1.7, transitionDelay: '140ms' }}>
-              A look at what we&apos;re making now — and a few favourites from before.
+              A look at what we&apos;re making now, and a few favourites from before.
             </p>
 
             {currentShowcaseItems.length > 0 && pastShowcaseItems.length > 0 && (
@@ -982,7 +1001,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
             Follow us <span style={{ color: GREEN, fontStyle: 'italic' }}>@rootandfuel</span>
           </h2>
           <p className={styles.reveal} style={{ fontSize: '15px', color: '#7a8f77', maxWidth: '480px', margin: '0 auto 40px', lineHeight: 1.7, transitionDelay: '140ms' }}>
-            Behind-the-scenes prep, new dishes and the odd delivery-day chaos — straight from our Instagram.
+            Behind-the-scenes prep, new dishes and the odd delivery-day chaos, straight from our Instagram.
           </p>
           <div style={{
             display: 'grid',
@@ -1039,7 +1058,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
           </div>
         </section>
 
-        {/* Sticky order — hidden when locked */}
+        {/* Sticky order: hidden when locked */}
         {cartCount > 0 && !mobileMenuOpen && !locked && (
           <div className={styles.stickyOrder}>
             <button className={styles.orderBtn} onClick={() => setShowForm(true)}>
@@ -1081,7 +1100,7 @@ const { locked, lockReason, lockSource, tuesdayOpen, tuesdayTimeLeft } = useCoun
             marginBottom: '24px', maxWidth: '460px', margin: '0 auto 24px',
             lineHeight: 1.7,
           }}>
-            We offer bespoke catering for corporate events, sports teams, and private functions — all built on whole food performance nutrition.
+            We offer bespoke catering for corporate events, sports teams, and private functions, all built on whole food performance nutrition.
           </p>
           <button
             onClick={() => setShowCatering(true)}

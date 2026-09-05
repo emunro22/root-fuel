@@ -9,7 +9,7 @@ export default function Terms() {
   return (
     <>
       <Head>
-        <title>Terms &amp; Conditions — Root &amp; Fuel</title>
+        <title>Terms &amp; Conditions: Root &amp; Fuel</title>
         <meta name="description" content="The terms and conditions that apply when you order food or catering from Root & Fuel Ltd, Glasgow." />
         <link rel="canonical" href={pageUrl} />
         <meta name="robots" content="noindex, follow" />
@@ -50,7 +50,7 @@ export default function Terms() {
             <ul>
               <li>Tuesday delivery orders open on Wednesday and close at midnight on Friday.</li>
               <li>Orders are delivered between 8am and 12pm on the delivery date, to addresses within our delivery area.</li>
-              <li>We may pause or close ordering around public holidays — any closure is shown on the site in advance.</li>
+              <li>We may pause or close ordering around public holidays. Any closure is shown on the site in advance.</li>
               <li>It&apos;s your responsibility to provide an accurate delivery address and to be available to receive your order.</li>
             </ul>
 
@@ -68,7 +68,7 @@ export default function Terms() {
 
             <h2>Cancellations &amp; refunds</h2>
             <p>
-              Contact us as soon as possible if you need to cancel or amend an order — we&apos;ll do our best to
+              Contact us as soon as possible if you need to cancel or amend an order; we&apos;ll do our best to
               accommodate changes made before the Friday ordering cutoff. Once an order has entered preparation it
               cannot be cancelled. If we&apos;re unable to fulfil an order for any reason, we&apos;ll offer a full refund.
             </p>
@@ -76,7 +76,7 @@ export default function Terms() {
             <h2>Allergies &amp; dietary information</h2>
             <p>
               Our food is prepared in a kitchen that handles common allergens. If you have an allergy or intolerance,
-              please tell us before ordering — you can do so via our contact form or by phone. While we take care to
+              please tell us before ordering. You can do so via our contact form or by phone. While we take care to
               accommodate dietary requirements, we cannot guarantee any dish is entirely free from trace allergens.
             </p>
 

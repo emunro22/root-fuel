@@ -20,7 +20,7 @@ function checkAuth(req, res) {
 export default async function handler(req, res) {
   if (!checkAuth(req, res)) return;
 
-  // POST — upload an image
+  // POST: upload an image
   if (req.method === 'POST') {
     const { filename, contentType, data, folder } = req.body || {};
     if (!filename || !data) return res.status(400).json({ error: 'filename and data are required' });
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // DELETE — remove an image by URL
+  // DELETE: remove an image by URL
   if (req.method === 'DELETE') {
     const { url } = req.body || {};
     if (!url) return res.status(400).json({ error: 'url is required' });
